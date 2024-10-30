@@ -3,7 +3,6 @@ from fastapi import FastAPI
 from app.database import engine, Base
 from app.auth.routes import auth_router
 
-# Створення таблиць
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
