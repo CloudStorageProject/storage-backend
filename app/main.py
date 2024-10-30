@@ -1,4 +1,3 @@
-# app/main.py
 from fastapi import FastAPI
 from app.database import engine, Base
 from app.auth.routes import auth_router
