@@ -1,8 +1,7 @@
-# app/auth/services.py
 from sqlalchemy.orm import Session
 from app.auth.schemas import UserCreate
 from app.auth.utils import hash_password
-from app.models import User  # Імпорт класу User з models.py
+from app.models import User  
 
 def create_user(db: Session, user: UserCreate):
     db_user = User(username=user.username, hashed_password=hash_password(user.password))
