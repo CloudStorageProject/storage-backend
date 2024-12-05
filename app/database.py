@@ -1,8 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import os
 
-DATABASE_URL = "postgresql://avnadmin:AVNS_smoFh38Zt3oJyIMeugG@cloudstorage-anonmessenger.i.aivencloud.com:28911/defaultdb?sslmode=require"  
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
