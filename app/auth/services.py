@@ -1,9 +1,82 @@
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from app.auth.schemas import UserCreate, UserLogin
+from app.auth.schemas import UserCreate, UserLogin, ChallengeAnswer
 from app.auth.utils import hash_password
-from app.models import User
+from app.models import User, Challenge
 from app.auth.utils import verify_password, create_access_token
-from app.auth.errors import CredentialsAlreadyTaken, InvalidCredentials
+from app.auth.errors import *
+from datetime import datetime
+from string import ascii_letters, digits
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives import hashes, serialization
+import random
+import base64
+
+
+def accept_challenge(public_key: str, challenge: ChallengeAnswer, db: Session):
+    user = db.query(User).filter(User.public_key == public_key).first()
+    
+    if not user:
+        raise NonExistentPublicKey("No user found with this public key.")
+    
+    challenge_entry = db.query(Challenge).filter(
+        Challenge.user_id == user.id,
+        Challenge.random_chars == challenge.challenge.split(":")[1],
+        Challenge.is_used == False
+    ).first()
+
+    if not challenge_entry:
+        raise NonExistentChallenge("This challenge does not exist or has already been used.")
+    
+    if not verify_signature(challenge.challenge, challenge.sign, public_key):
+        raise InvalidSignature("Invalid signature.")
+    
+    access_token = create_access_token(data={"sub": challenge_entry.user.username, "access_type": "full"})
+
+    challenge_entry.is_used = True
+    db.commit()
+
+    return {"token": access_token}
+
+
+def verify_signature(challenge: str, signature: str, public_key: str) -> bool:
+    try:
+        pub_key_bytes = base64.b64decode(public_key)
+        pub_key = serialization.load_pem_public_key(pub_key_bytes)
+        signature_bytes = base64.b64decode(signature)
+        challenge_bytes = challenge.encode('utf-8')
+
+        pub_key.verify(
+            signature_bytes,
+            challenge_bytes,
+            padding.PKCS1v15(),
+            hashes.SHA256()
+        )
+        return True
+    
+    except Exception as e:
+        print(str(e)) # debug
+        return False
+
+
+def generate_challenge(public_key: str, db: Session):
+    user = db.query(User).filter(User.public_key == public_key).first()
+    if not user:
+        raise NonExistentPublicKey("There is no user with this public key.")
+    
+    challenge_str = f"{int(datetime.utcnow().timestamp())}:{''.join(random.choices(ascii_letters + digits, k=20))}"
+    
+    challenge = Challenge(
+        user_id=user.id,
+        random_chars=challenge_str.split(":")[1],
+        is_used=False
+    )
+
+    db.add(challenge)
+    db.commit()
+
+    return challenge_str
+
 
 def try_login(db: Session, provided: UserLogin):
     user = get_user_by_username(db, provided.username)
@@ -11,20 +84,28 @@ def try_login(db: Session, provided: UserLogin):
     if not user or (user and not verify_password(provided.password, user.hashed_password)):
         raise InvalidCredentials("Incorrect username or password")
     
-    access_token = create_access_token(data={"sub": user.username, "privileged": False})
+    access_token = create_access_token(data={"sub": user.username, "access_type": "limited"})
 
     return {"token": access_token}
 
 
 def create_user(db: Session, user: UserCreate):
-    db_user_by_username = get_user_by_username(db, user.username)
-    db_user_by_email = db.query(User).filter(User.email == user.email).first()
-    
-    if db_user_by_username:
-        raise CredentialsAlreadyTaken(f"Username '{user.username}' is already taken.")
-    if db_user_by_email:
-        raise CredentialsAlreadyTaken(f"Email '{user.email}' is already in use.")
+    existing_user = db.query(User).filter(
+        or_(
+            User.username == user.username,
+            User.email == user.email,
+            User.public_key == user.public_key
+        )
+    ).first()
 
+    if existing_user:
+        if existing_user.username == user.username:
+            raise CredentialsAlreadyTaken(f"Username '{user.username}' is already in use.")
+        if existing_user.email == user.email:
+            raise CredentialsAlreadyTaken(f"Email '{user.email}' is already in use.")
+        if existing_user.public_key == user.public_key:
+            raise CredentialsAlreadyTaken(f"Public key '{user.public_key}' is already in use.")
+        
     db_user = User(
         username=user.username,
         hashed_password=hash_password(user.password),
@@ -37,6 +118,7 @@ def create_user(db: Session, user: UserCreate):
     db.refresh(db_user)
 
     return db_user
+
 
 def get_user_by_username(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()

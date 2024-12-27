@@ -1,5 +1,9 @@
 from pydantic import BaseModel, Field, EmailStr
 
+class ChallengeAnswer(BaseModel):
+    challenge: str
+    sign: str
+
 class UserLogin(BaseModel):
     username: str = Field(..., min_length=4, max_length=20, pattern=r'^[a-zA-Z0-9]+$')
     password: str = Field(..., min_length=8, max_length=128)
