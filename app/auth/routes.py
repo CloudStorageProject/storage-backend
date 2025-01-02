@@ -14,11 +14,11 @@ async def challenge_login(public_key: str, challenge: ChallengeAnswer, db: Sessi
         result = accept_challenge(public_key, challenge, db)
         return result
     except (NonExistentChallenge, NonExistentPublicKey) as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except InvalidSignature as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Unexpected error")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unexpected error")
     
 
 @auth_router.get("/login/challenge/{public_key}")
@@ -27,13 +27,13 @@ def get_challenge(public_key: str, db: Session = Depends(get_db)):
         challenge_str = generate_challenge(public_key, db)
         return {"challenge": challenge_str}
     except NonExistentPublicKey as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Unexpected error")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unexpected error")
 
 
-@auth_router.post("/register", response_model=UserOut)
-def register_user(user: UserCreate, db: Session = Depends(get_db)):
+@auth_router.post("/register")
+def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserOut:
     try:
         return create_user(db=db, user=user)
     except CredentialsAlreadyTaken as e:
@@ -42,11 +42,11 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
             detail=str(e)
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Unexpected error")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unexpected error")
 
 
-@auth_router.post("/login", response_model=Token)
-def login(user: UserLogin, db: Session = Depends(get_db)):
+@auth_router.post("/login")
+def login(user: UserLogin, db: Session = Depends(get_db)) -> Token:
     try:
         return try_login(db=db, provided=user)
     except InvalidCredentials as e:
@@ -55,4 +55,4 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
             detail=str(e)
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Unexpected error")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unexpected error")

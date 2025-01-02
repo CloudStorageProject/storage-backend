@@ -1,16 +1,10 @@
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from app.auth.schemas import UserCreate, UserLogin, ChallengeAnswer
-from app.auth.utils import hash_password
+from app.auth.utils import hash_password, verify_signature, generate_challenge_string
 from app.models import User, Challenge
 from app.auth.utils import verify_password, create_access_token
 from app.auth.errors import *
-from datetime import datetime
-from string import ascii_letters, digits
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import hashes, serialization
-import random
-import base64
 
 
 def accept_challenge(public_key: str, challenge: ChallengeAnswer, db: Session):
@@ -21,7 +15,7 @@ def accept_challenge(public_key: str, challenge: ChallengeAnswer, db: Session):
     
     challenge_entry = db.query(Challenge).filter(
         Challenge.user_id == user.id,
-        Challenge.random_chars == challenge.challenge.split(":")[1],
+        Challenge.random_chars == challenge.random_part,
         Challenge.is_used == False
     ).first()
 
@@ -38,33 +32,12 @@ def accept_challenge(public_key: str, challenge: ChallengeAnswer, db: Session):
 
     return {"token": access_token}
 
-
-def verify_signature(challenge: str, signature: str, public_key: str) -> bool:
-    try:
-        pub_key_bytes = base64.b64decode(public_key)
-        pub_key = serialization.load_pem_public_key(pub_key_bytes)
-        signature_bytes = base64.b64decode(signature)
-        challenge_bytes = challenge.encode('utf-8')
-
-        pub_key.verify(
-            signature_bytes,
-            challenge_bytes,
-            padding.PKCS1v15(),
-            hashes.SHA256()
-        )
-        return True
-    
-    except Exception as e:
-        print(str(e)) # debug
-        return False
-
-
 def generate_challenge(public_key: str, db: Session):
     user = db.query(User).filter(User.public_key == public_key).first()
     if not user:
         raise NonExistentPublicKey("There is no user with this public key.")
     
-    challenge_str = f"{int(datetime.utcnow().timestamp())}:{''.join(random.choices(ascii_letters + digits, k=20))}"
+    challenge_str = generate_challenge_string()
     
     challenge = Challenge(
         user_id=user.id,
