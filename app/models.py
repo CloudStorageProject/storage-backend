@@ -2,6 +2,15 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base  
+from enum import Enum as PyEnum
+
+class FileType(PyEnum):
+    IMAGE = "IMAGE"
+    TEXT = "TEXT"
+    VIDEO = "VIDEO"
+    AUDIO = "AUDIO"
+    DOCUMENT = "DOCUMENT"
+
 
 class User(Base):
     __tablename__ = "users"
@@ -13,6 +22,7 @@ class User(Base):
     public_key = Column(String, unique=True)
 
     challenges = relationship("Challenge", back_populates="user")
+    folders = relationship("Folder", back_populates="user")
 
 
 class Challenge(Base):
@@ -24,3 +34,33 @@ class Challenge(Base):
     is_used = Column(Boolean, default=False)
 
     user = relationship("User", back_populates="challenges")
+
+
+class Folder(Base):
+    __tablename__ = 'folders'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    parent_id = Column(Integer, ForeignKey('folders.id'), nullable=True)
+    name = Column(String, nullable=False)
+
+    
+    user = relationship('User', back_populates='folders')
+    parent = relationship('Folder', remote_side=[id])
+    subfolders = relationship('Folder', back_populates='parent')
+    files = relationship('File', back_populates='folder')
+
+
+class File(Base):
+    __tablename__ = 'files'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    extension = Column(String, nullable=False)
+    file_type = Column(String, nullable=False)
+    folder_id = Column(Integer, ForeignKey('folders.id'), nullable=False)
+    encrypted_key = Column(String, nullable=False)
+    encrypted_iv = Column(String, nullable=False)
+
+    # Связи
+    folder = relationship('Folder', back_populates='files')
