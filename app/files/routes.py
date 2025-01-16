@@ -56,7 +56,7 @@ def rename_file(
     new_name: FileRename, 
     file_id: int, 
     current_user: dict = Depends(get_basic_auth), 
-    db: Session = Depends(get_db)) -> FileMetadata:
+    db: Session = Depends(get_db)):
     try:
         return try_rename_file(current_user, file_id, new_name.new_name, db)
     except FileDoesNotExist as e:

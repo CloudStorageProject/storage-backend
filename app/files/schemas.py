@@ -26,14 +26,3 @@ class FileResponse(BaseModel):
 
 class FileRename(BaseModel):
     new_name: str = Field(..., min_length=2, max_length=128)
-
-
-class FileMetadata(BaseModel):
-    id: int
-    name: str
-    format: str
-    type: str
-    folder_id: int
-    encrypted_key: str
-    encrypted_iv: str
-    name_in_storage: str
