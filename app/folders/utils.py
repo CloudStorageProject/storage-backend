@@ -31,5 +31,5 @@ def construct_model(folder):
         id=folder.id,
         name=folder.name,
         folders=[FolderMember(id=f.id, name=f.name) for f in folder.subfolders],
-        files=[FileOut(id=f.id, name=f.name, type=f.file_type, format=f.extension) for f in folder.files]
+        files=[FileOut(id=f.id, name=f.name, type=f.type, format=f.format) for f in folder.files]
     )

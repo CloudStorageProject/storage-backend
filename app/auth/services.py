@@ -6,6 +6,8 @@ from app.models import User, Challenge, Folder
 from app.auth.utils import verify_password, create_access_token, decode_access_token
 from app.auth.errors import *
 from app.database import get_db
+from app.files.utils import create_bucket
+from app.files.errors import BucketCreationError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
@@ -115,44 +117,53 @@ def try_login(db: Session, provided: UserLogin):
 
 
 def create_user(db: Session, user: UserCreate):
-    existing_user = db.query(User).filter(
-        or_(
-            User.username == user.username,
-            User.email == user.email,
-            User.public_key == user.public_key
+    try:
+        db.begin()
+
+        existing_user = db.query(User).filter(
+            or_(
+                User.username == user.username,
+                User.email == user.email,
+                User.public_key == user.public_key
+            )
+        ).first()
+
+        if existing_user:
+            if existing_user.username == user.username:
+                raise CredentialsAlreadyTaken(f"Username '{user.username}' is already in use.")
+            if existing_user.email == user.email:
+                raise CredentialsAlreadyTaken(f"Email '{user.email}' is already in use.")
+            if existing_user.public_key == user.public_key:
+                raise CredentialsAlreadyTaken(f"Public key '{user.public_key}' is already in use.")
+
+        db_user = User(
+            username=user.username,
+            hashed_password=hash_password(user.password),
+            email=user.email,
+            public_key=user.public_key
         )
-    ).first()
 
-    if existing_user:
-        if existing_user.username == user.username:
-            raise CredentialsAlreadyTaken(f"Username '{user.username}' is already in use.")
-        if existing_user.email == user.email:
-            raise CredentialsAlreadyTaken(f"Email '{user.email}' is already in use.")
-        if existing_user.public_key == user.public_key:
-            raise CredentialsAlreadyTaken(f"Public key '{user.public_key}' is already in use.")
-        
-    db_user = User(
-        username=user.username,
-        hashed_password=hash_password(user.password),
-        email=user.email,
-        public_key=user.public_key
-    )
+        db.add(db_user)
+        db.flush()
+
+        root_folder = Folder(
+            name="root",
+            user_id=db_user.id,
+            parent_id=None
+        )
+
+        db.add(root_folder)
+        db.flush()
+
+        create_bucket(user.username)
+
+        db.commit()
+
+        return db_user
     
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-
-    root_folder = Folder(
-        name="root",
-        user_id=db_user.id,
-        parent_id=None
-    )
-
-    db.add(root_folder)
-    db.commit()
-    db.refresh(root_folder)
-
-    return db_user
+    except Exception as e:
+        db.rollback()
+        raise e
 
 
 def get_user_by_username(db: Session, username: str):

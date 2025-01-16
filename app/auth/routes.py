@@ -4,6 +4,7 @@ from app.auth.schemas import *
 from app.auth.services import *
 from app.database import get_db
 from app.auth.errors import *
+from app.files.errors import BucketCreationError
 
 
 auth_router = APIRouter()
@@ -40,6 +41,8 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserOut:
         return create_user(db=db, user=user)
     except CredentialsAlreadyTaken as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except BucketCreationError as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @auth_router.post("/login")

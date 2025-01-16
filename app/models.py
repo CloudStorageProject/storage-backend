@@ -4,14 +4,6 @@ from sqlalchemy.sql import func
 from app.database import Base  
 from enum import Enum as PyEnum
 
-class FileType(PyEnum):
-    IMAGE = "IMAGE"
-    TEXT = "TEXT"
-    VIDEO = "VIDEO"
-    AUDIO = "AUDIO"
-    DOCUMENT = "DOCUMENT"
-
-
 class User(Base):
     __tablename__ = "users"
 
@@ -56,11 +48,11 @@ class File(Base):
     
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
-    extension = Column(String, nullable=False)
-    file_type = Column(String, nullable=False)
+    format = Column(String, nullable=False)
+    type = Column(String, nullable=False)
     folder_id = Column(Integer, ForeignKey('folders.id'), nullable=False)
     encrypted_key = Column(String, nullable=False)
     encrypted_iv = Column(String, nullable=False)
-
-    # Связи
+    name_in_storage = Column(String, nullable=False)
+    
     folder = relationship('Folder', back_populates='files')
