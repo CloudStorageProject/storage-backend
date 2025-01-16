@@ -16,7 +16,6 @@ minio_client = Minio(
     secret_key = os.getenv("MINIO_PASSWORD"),
     secure = False
 )
-bucket = os.getenv("MINIO_BUCKET_NAME")
 
 
 def create_bucket(username: str):
