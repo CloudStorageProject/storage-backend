@@ -34,15 +34,12 @@ class UserInfo(BaseModel):
     username: str
     email: str
     public_key: str
-    
-
-class UserOut(BaseModel):
-    username: str
 
 
-class Token(BaseModel):
+class LoginResponse(BaseModel):
     token: str
+    user: UserInfo
 
-
+    
 class ChallengeString(BaseModel):
     challenge: str

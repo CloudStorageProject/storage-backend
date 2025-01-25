@@ -83,7 +83,7 @@ def accept_challenge(public_key: str, challenge: ChallengeAnswer, db: Session):
     challenge_entry.is_used = True
     db.commit()
 
-    return {"token": access_token}
+    return {"token": access_token, "user": user}
 
 
 def generate_challenge(public_key: str, db: Session):
@@ -113,7 +113,7 @@ def try_login(db: Session, provided: UserLogin):
     
     access_token = create_access_token(data={"sub": user.username, "access_type": "limited"})
 
-    return {"token": access_token}
+    return {"token": access_token, "user": user}
 
 
 def create_user(db: Session, user: UserCreate):

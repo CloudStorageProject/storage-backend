@@ -16,7 +16,7 @@ def get_me(current_user: dict = Depends(get_basic_auth), db: Session = Depends(g
     
 
 @auth_router.post("/login/challenge/{public_key}")
-def challenge_login(public_key: str, challenge: ChallengeAnswer, db: Session = Depends(get_db)) -> Token:
+def challenge_login(public_key: str, challenge: ChallengeAnswer, db: Session = Depends(get_db)) -> LoginResponse:
     try:
         result = accept_challenge(public_key, challenge, db)
         return result
@@ -36,7 +36,7 @@ def get_challenge(public_key: str, db: Session = Depends(get_db)) -> ChallengeSt
 
 
 @auth_router.post("/register")
-def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserOut:
+def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserInfo:
     try:
         return create_user(db=db, user=user)
     except CredentialsAlreadyTaken as e:
@@ -46,7 +46,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserOut:
 
 
 @auth_router.post("/login")
-def login(user: UserLogin, db: Session = Depends(get_db)) -> Token:
+def login(user: UserLogin, db: Session = Depends(get_db)) -> LoginResponse:
     try:
         return try_login(db=db, provided=user)
     except InvalidCredentials as e:

@@ -27,7 +27,10 @@ def get_folder(folder_id: int, current_user: dict = Depends(get_basic_auth), db:
 
 # SHOULD BE CHANGED TO GET_FULL_AUTH AFTER TESTING
 @folder_router.post("/")
-def root_create(folder: FolderCreate, current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)) -> FolderOut:
+def create_folder_in_root(
+    folder: FolderCreate, 
+    current_user: dict = Depends(get_basic_auth), 
+    db: Session = Depends(get_db)) -> FolderOut:
     try:
         created = create_in_root(current_user, folder.name, db)
         return created
@@ -37,7 +40,7 @@ def root_create(folder: FolderCreate, current_user: dict = Depends(get_basic_aut
 
 # SHOULD BE CHANGED TO GET_FULL_AUTH AFTER TESTING
 @folder_router.post("/{folder_id}")
-def folder_create(
+def create_folder_in_folder(
     folder_id: int, 
     folder: FolderCreate, 
     current_user: dict = Depends(get_basic_auth), 

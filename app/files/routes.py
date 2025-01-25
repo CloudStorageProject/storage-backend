@@ -14,7 +14,7 @@ file_router = APIRouter()
 
 
 # SHOULD BE CHANGED TO GET_FULL_AUTH IN PRODUCTION (?)
-@file_router.post("/upload")
+@file_router.post("/")
 def upload_file(file: FileData, current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)) -> FileResponse:
     try:
         return {"file_id": try_upload_file(current_user, file, db)}
@@ -27,7 +27,7 @@ def upload_file(file: FileData, current_user: dict = Depends(get_basic_auth), db
 
 
 # SHOULD BE CHANGED TO GET_FULL_AUTH IN PRODUCTION (?)
-@file_router.get("/get/{file_id}")
+@file_router.get("/{file_id}")
 def get_file_contents(file_id: int, current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)):
     try:
         bytes = get_file(current_user, file_id, db)
@@ -41,8 +41,8 @@ def get_file_contents(file_id: int, current_user: dict = Depends(get_basic_auth)
 
 # SHOULD BE CHANGED TO GET_FULL_AUTH IN PRODUCTION (?)
 # getting metadata (cryptographic parameters, type, format, etc)
-@file_router.get("/getParams/{file_id}")
-def get_file_parameters(file_id: int, current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)):
+@file_router.get("/params/{file_id}")
+def get_file_parameters(file_id: int, current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)) -> FileMetadata:
     try:
         return get_metadata(current_user, file_id, db)
     except FileDoesNotExist as e:
@@ -51,7 +51,7 @@ def get_file_parameters(file_id: int, current_user: dict = Depends(get_basic_aut
     
 
 # SHOULD BE CHANGED TO GET_FULL_AUTH IN PRODUCTION (?)
-@file_router.patch("/rename/{file_id}")
+@file_router.patch("/{file_id}")
 def rename_file(
     new_name: FileRename, 
     file_id: int, 
@@ -66,7 +66,7 @@ def rename_file(
     
 
 # SHOULD BE CHANGED TO GET_FULL_AUTH IN PRODUCTION (?)
-@file_router.delete("/delete/{file_id}")
+@file_router.delete("/{file_id}")
 def delete_file(file_id: int, current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)):
     try:
         return try_delete_file(current_user, file_id, db)
