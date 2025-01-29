@@ -20,7 +20,7 @@ jobs:
         run: echo "${{ secrets.DOCR_ACCESS_TOKEN }}" | docker login registry.digitalocean.com -u ${{ secrets.DOCR_USER }} --password-stdin
 
       - name: Build and tag Docker image
-        run: docker build -t ${ DOCR_REGISTRY }/${ DOCR_REPOSITORY }:latest .
+        run: docker build -t ${DOCR_REGISTRY}/${DOCR_REPOSITORY}:latest .
 
       - name: Push Docker image to DigitalOcean Registry
-        run: docker push ${ DOCR_REGISTRY }/${ DOCR_REPOSITORY }:latest
+        run: docker push ${DOCR_REGISTRY}/${DOCR_REPOSITORY}:latest
