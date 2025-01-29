@@ -2,7 +2,7 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [ "dev", "github-actions" ]
+    branches: [ "dev" ]
 
 env:
   DOCR_REGISTRY: registry.digitalocean.com/cloud-storage-registry
