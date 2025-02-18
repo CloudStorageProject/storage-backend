@@ -9,7 +9,8 @@ import os
 import io
 import base64
 
-
+# assuming the bucket is already created
+bucket_name = os.getenv("BUCKET_NAME")
 minio_client = Minio(
     os.getenv("MINIO_ENDPOINT"),
     access_key = os.getenv("MINIO_LOGIN"),
@@ -17,26 +18,17 @@ minio_client = Minio(
     secure = False
 )
 
-
-def create_bucket(username: str):
-    try:
-        minio_client.make_bucket(username)
-    except Exception as e:
-        raise BucketCreationError("An unexpected error occurred while creating the bucket: " + str(e))
-
-
-def generate_filename(prefix: str):
-    return prefix + str(datetime.utcnow().timestamp())
+def generate_filename(username: str, prefix: str):
+    return username + prefix + str(datetime.utcnow().timestamp())
 
 
 def save_to_storage(username: str, file: FileData, prefix: str):
-    filename = generate_filename(prefix)
-    # encoded = file.content.encode('utf-8')
+    filename = generate_filename(username, prefix)
     file_content = base64.b64decode(file.content)
 
     try:
         minio_client.put_object(
-            username,
+            bucket_name,
             filename,
             data = io.BytesIO(file_content),
             length = len(file_content),
@@ -47,9 +39,9 @@ def save_to_storage(username: str, file: FileData, prefix: str):
         raise FileUploadError("An unexpected error occurred while uploading the file: " + str(e))
 
 
-def remove_from_storage(username: str, file_name: str):
+def remove_from_storage(file_name: str):
     try:
-        minio_client.remove_object(username, file_name)
+        minio_client.remove_object(bucket_name, file_name)
     except S3Error as e:
         raise FileDeletionError("An unexpected error occurred while deleting the file: " + str(e))
 
@@ -61,9 +53,9 @@ def check_duplicate_file(folder_id: int, file_name: str, db: Session):
         raise FileAlreadyExistsInThisFolder("A file with this name already exists in this folder.")
 
 
-def retrieve_from_storage(username: str, filename: str):
+def retrieve_from_storage(filename: str):
     try:
-        handle = minio_client.get_object(username, filename)
+        handle = minio_client.get_object(bucket_name, filename)
         content = handle.read()
         handle.close()
 

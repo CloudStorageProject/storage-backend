@@ -54,8 +54,6 @@ def change_folder_name(user, folder_id: int, folder_name: str, db: Session):
     db.commit()
     db.refresh(target)
 
-    return construct_model(target)
-
 
 def delete_folder(user, folder_id: int, db: Session):
     target = get_folder(user['id'], folder_id, db)
@@ -65,5 +63,3 @@ def delete_folder(user, folder_id: int, db: Session):
     
     db.delete(target)
     db.commit()
-
-    return {"detail": "Folder deleted successfully."}

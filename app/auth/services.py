@@ -6,8 +6,6 @@ from app.models import User, Challenge, Folder
 from app.auth.utils import verify_password, create_access_token, decode_access_token
 from app.auth.errors import *
 from app.database import get_db
-from app.files.utils import create_bucket
-from app.files.errors import BucketCreationError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
@@ -154,9 +152,6 @@ def create_user(db: Session, user: UserCreate):
 
         db.add(root_folder)
         db.flush()
-
-        create_bucket(user.username)
-
         db.commit()
 
         return db_user

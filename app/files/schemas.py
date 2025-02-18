@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 from enum import Enum
-from typing import Union
 from app.folders.schemas import FolderMember
 
 

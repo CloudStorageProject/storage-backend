@@ -20,7 +20,7 @@ class UserLogin(BaseModel):
 
 
 class UserCreate(BaseModel):
-    username: str = Field(..., min_length=4, max_length=20, pattern=r'^[a-z0-9]+$')
+    username: str = Field(..., min_length=4, max_length=20, pattern=r'^[a-zA-Z0-9]+$')
     password: str = Field(..., min_length=8, max_length=128)
     public_key: str = Field(..., pattern=r'^[A-Za-z0-9+/=]+$')
     email: EmailStr

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth.services import get_basic_auth, get_full_auth
@@ -62,8 +63,8 @@ def folder_patch(
     current_user: dict = Depends(get_basic_auth),
     db: Session = Depends(get_db)) -> FolderOut:
     try:
-        changed = change_folder_name(current_user, folder_id, folder.name, db)
-        return changed
+        change_folder_name(current_user, folder_id, folder.name, db)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except (CannotModifyRootFolder, FolderNameAlreadyTakenInParent) as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except FolderNotFound as e:
@@ -75,8 +76,8 @@ def folder_patch(
 @folder_router.delete("/{folder_id}")
 def folder_delete(folder_id: int, current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)):
     try:
-        deleted = delete_folder(current_user, folder_id, db)
-        return deleted
+        delete_folder(current_user, folder_id, db)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except CannotModifyRootFolder as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except FolderNotFound as e:

@@ -11,7 +11,7 @@ auth_router = APIRouter()
 
 
 @auth_router.get("/me")
-def get_me(current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)) -> UserInfo:
+def get_me(current_user: dict = Depends(get_basic_auth)) -> UserInfo:
     return strip_unnecessary(current_user)
     
 

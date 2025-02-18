@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import List, Optional
 
 
 class FolderMember(BaseModel):
@@ -21,8 +20,8 @@ class FolderPatch(FolderBase):
 
 class FolderOut(FolderBase):
     id: int
-    folders: List["FolderMember"] = []
-    files: List["FileOut"] = []
+    folders: list["FolderMember"] = []
+    files: list["FileOut"] = []
 
     class Config:
         from_attributes = True

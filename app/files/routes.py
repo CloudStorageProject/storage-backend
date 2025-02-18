@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from app.database import get_db
 from app.files.errors import *
 from app.auth.services import get_basic_auth, get_full_auth
@@ -41,7 +42,7 @@ def get_file_contents(file_id: int, current_user: dict = Depends(get_basic_auth)
 
 # SHOULD BE CHANGED TO GET_FULL_AUTH IN PRODUCTION (?)
 # getting metadata (cryptographic parameters, type, format, etc)
-@file_router.get("/params/{file_id}")
+@file_router.get("/{file_id}/params")
 def get_file_parameters(file_id: int, current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)) -> FileMetadata:
     try:
         return get_metadata(current_user, file_id, db)
@@ -58,7 +59,8 @@ def rename_file(
     current_user: dict = Depends(get_basic_auth), 
     db: Session = Depends(get_db)):
     try:
-        return try_rename_file(current_user, file_id, new_name.new_name, db)
+        try_rename_file(current_user, file_id, new_name.new_name, db)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except FileDoesNotExist as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except FileAlreadyExistsInThisFolder as e:
@@ -69,7 +71,8 @@ def rename_file(
 @file_router.delete("/{file_id}")
 def delete_file(file_id: int, current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)):
     try:
-        return try_delete_file(current_user, file_id, db)
+        try_delete_file(current_user, file_id, db)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except FileDoesNotExist as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except FileDeletionError as e:

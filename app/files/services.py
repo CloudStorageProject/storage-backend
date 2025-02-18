@@ -29,7 +29,7 @@ def try_upload_file(current_user: dict, file: FileData, db: Session):
 def get_file(current_user: dict, file_id: int, db: Session):
     print(f"current_user = {current_user}, file_id = {file_id}")
     file_name = retrieve_file_from_id(current_user['id'], file_id, db).name_in_storage
-    return retrieve_from_storage(current_user['username'], file_name)
+    return retrieve_from_storage(file_name)
 
 
 def try_rename_file(current_user: dict, file_id: int, new_name: str, db: Session):
@@ -39,19 +39,16 @@ def try_rename_file(current_user: dict, file_id: int, new_name: str, db: Session
     file.name = new_name
     db.commit()
 
-    return {"detail": "File renamed successfully."}
-
 
 def try_delete_file(current_user: dict, file_id: int, db: Session):
     try:
         file = retrieve_file_from_id(current_user['id'], file_id, db)
 
-        remove_from_storage(current_user['username'], file.name_in_storage)
+        remove_from_storage(file.name_in_storage)
 
         db.delete(file)
         db.commit()
-
-        return {"detail": "File deleted successfully."}
+        
     except Exception as e:
         db.rollback()
         raise e
