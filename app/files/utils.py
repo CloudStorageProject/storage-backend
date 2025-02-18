@@ -1,6 +1,6 @@
 from minio import Minio, S3Error, InvalidResponseError
 from datetime import datetime
-from app.files.errors import FileUploadError, BucketCreationError
+from app.files.errors import FileUploadError
 from app.files.schemas import FileData
 from sqlalchemy.orm import Session
 from app.models import File
