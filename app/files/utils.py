@@ -1,6 +1,5 @@
 from minio import Minio, S3Error, InvalidResponseError
 from datetime import datetime
-from app.files.errors import FileUploadError
 from app.files.schemas import FileData
 from sqlalchemy.orm import Session
 from app.models import File
@@ -13,13 +12,13 @@ import base64
 bucket_name = os.getenv("BUCKET_NAME")
 minio_client = Minio(
     os.getenv("MINIO_ENDPOINT"),
-    access_key = os.getenv("MINIO_LOGIN"),
-    secret_key = os.getenv("MINIO_PASSWORD"),
-    secure = (True if os.getenv("MINIO_SECURE") == "true" else False)
+    access_key=os.getenv("MINIO_LOGIN"),
+    secret_key=os.getenv("MINIO_PASSWORD"),
+    secure=os.getenv("MINIO_SECURE") == "true"
 )
 
 def generate_filename(username: str, prefix: str):
-    return username + prefix + str(datetime.utcnow().timestamp())
+    return f"{username}-{prefix}-{str(round(datetime.utcnow().timestamp()))}.senc"
 
 
 def save_to_storage(username: str, file: FileData, prefix: str):
@@ -30,9 +29,9 @@ def save_to_storage(username: str, file: FileData, prefix: str):
         minio_client.put_object(
             bucket_name,
             filename,
-            data = io.BytesIO(file_content),
-            length = len(file_content),
-            content_type = "application/octet-stream"
+            data=io.BytesIO(file_content),
+            length=len(file_content),
+            content_type="application/octet-stream"
         )
         return filename
     except S3Error as e:

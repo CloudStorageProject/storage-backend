@@ -1,0 +1,26 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ "dev" ]
+
+env:
+  DOCR_REGISTRY: registry.digitalocean.com/cloud-storage-registry
+  DOCR_REPOSITORY: storage-backend
+
+jobs:
+  build-image-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to DigitalOcean Container Registry
+        run: echo "${{ secrets.DOCR_ACCESS_TOKEN }}" | docker login registry.digitalocean.com -u ${{ secrets.DOCR_USER }} --password-stdin
+
+      - name: Build and tag Docker image
+        run: docker build -t ${DOCR_REGISTRY}/${DOCR_REPOSITORY}:latest .
+
+      - name: Push Docker image to DigitalOcean Registry
+        run: docker push ${DOCR_REGISTRY}/${DOCR_REPOSITORY}:latest
