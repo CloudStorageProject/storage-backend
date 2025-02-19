@@ -15,7 +15,7 @@ minio_client = Minio(
     os.getenv("MINIO_ENDPOINT"),
     access_key = os.getenv("MINIO_LOGIN"),
     secret_key = os.getenv("MINIO_PASSWORD"),
-    secure = False
+    secure = (True if os.getenv("MINIO_SECURE") == "true" else False)
 )
 
 def generate_filename(username: str, prefix: str):
