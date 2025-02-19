@@ -17,7 +17,6 @@ h11==0.14.0
 idna==3.10
 minio==7.2.15
 passlib==1.7.4
-psycopg2==2.9.10
 psycopg2-binary==2.9.10
 pycparser==2.22
 pycryptodome==3.21.0
