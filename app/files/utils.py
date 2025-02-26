@@ -17,21 +17,22 @@ minio_client = Minio(
     secure=os.getenv("MINIO_SECURE") == "true"
 )
 
+
 def generate_filename(username: str, prefix: str):
     return f"{username}-{prefix}-{str(round(datetime.utcnow().timestamp()))}.senc"
 
 
 def save_to_storage(username: str, file: FileData, prefix: str):
     filename = generate_filename(username, prefix)
-    file_content = base64.b64decode(file.content)
+    file.content = file.content.encode('utf-8')
 
     try:
         minio_client.put_object(
             bucket_name,
             filename,
-            data=io.BytesIO(file_content),
-            length=len(file_content),
-            content_type="application/octet-stream"
+            data = io.BytesIO(file.content),
+            length = len(file.content),
+            content_type = "text/plain"
         )
         return filename
     except S3Error as e:
