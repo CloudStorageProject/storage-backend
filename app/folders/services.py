@@ -3,6 +3,7 @@ from app.models import Folder, File, User
 from app.folders.errors import *
 from app.folders.schemas import *
 from app.folders.utils import *
+from fastapi import BackgroundTasks
 
 
 def get_root_folder(user, db: Session):
@@ -55,11 +56,11 @@ def change_folder_name(user, folder_id: int, folder_name: str, db: Session):
     db.refresh(target)
 
 
-def delete_folder(user, folder_id: int, db: Session):
+def delete_folder(user, folder_id: int, db: Session, background_tasks: BackgroundTasks):
+    db.expire_on_commit = False
     target = get_folder(user['id'], folder_id, db)
 
     if target.parent_id is None:
         raise CannotModifyRootFolder("Root folder can't be deleted.")
     
-    db.delete(target)
-    db.commit()
+    background_tasks.add_task(delete_folder_task, target, db)

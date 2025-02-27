@@ -1,7 +1,52 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models import Folder
 from app.folders.schemas import *
 from app.folders.errors import *
+from app.files.utils import bulk_remove_from_storage
+
+def delete_folder_task(folder: Folder, db: Session):
+    try:
+        with db.begin():
+            print(f"Working with folder {folder.name}, id = {folder.id}")
+
+            delete_files_in_folder(folder, db)
+            delete_subfolders_and_files(folder, db)
+
+            db.delete(folder)
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        raise e
+
+
+def delete_subfolders_and_files(folder: Folder, db: Session):
+    folder_full = db.query(Folder).options(joinedload(Folder.subfolders)).filter(Folder.id == folder.id).first()
+
+    for subfolder in folder_full.subfolders:
+        try:
+            delete_files_in_folder(subfolder, db)
+            delete_subfolders_and_files(subfolder, db)
+            db.delete(subfolder)
+        except Exception as e:
+            db.rollback()
+            raise e
+
+def delete_files_in_folder(folder: Folder, db: Session):
+    folder_full = db.query(Folder).options(joinedload(Folder.files)).filter(Folder.id == folder.id).first()
+    file_names = [file.name_in_storage for file in folder_full.files]
+
+    print(f"File names for folder {folder.name} with id = {folder.id}: {file_names}")
+
+    if file_names:
+        bulk_remove_from_storage(file_names)
+
+    for file in folder_full.files:
+        try:
+            db.delete(file)
+        except Exception as e:
+            db.rollback()
+            raise e
+    db.flush()
 
 
 def get_root(user_id: int, db: Session):

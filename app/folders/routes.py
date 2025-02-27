@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, BackgroundTasks
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -74,9 +74,13 @@ def folder_patch(
 
 # SHOULD BE CHANGED TO GET_FULL_AUTH AFTER TESTING
 @folder_router.delete("/{folder_id}")
-def folder_delete(folder_id: int, current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)):
+def folder_delete(
+    folder_id: int,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_basic_auth), 
+    db: Session = Depends(get_db)):
     try:
-        delete_folder(current_user, folder_id, db)
+        delete_folder(current_user, folder_id, db, background_tasks)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except CannotModifyRootFolder as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))

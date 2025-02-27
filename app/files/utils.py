@@ -1,4 +1,5 @@
 from minio import Minio, S3Error, InvalidResponseError
+from minio.deleteobjects import DeleteObject
 from datetime import datetime
 from app.files.schemas import FileData
 from sqlalchemy.orm import Session
@@ -44,6 +45,24 @@ def remove_from_storage(file_name: str):
         minio_client.remove_object(bucket_name, file_name)
     except S3Error as e:
         raise FileDeletionError("An unexpected error occurred while deleting the file: " + str(e))
+
+
+def bulk_remove_from_storage(file_names: list[str]):
+    try:
+        print('Trying to delete multiple objects...')
+        
+        objects_to_delete = [DeleteObject(file_name) for file_name in file_names]
+        deleted_objects = minio_client.remove_objects(bucket_name, objects_to_delete)
+        
+        for result in deleted_objects:
+            if result.error:
+                print(f"Failed to delete {result.object_name}: {result.error}")
+            else:
+                print(f"Successfully deleted {result.object_name}")
+                
+    except S3Error as e:
+        print(f'Could not delete multiple objects: {str(e)}')
+        raise FileDeletionError(f"An unexpected error occurred while deleting files: {str(e)}")
 
 
 # ownership of the folder is already checked in get_folder
