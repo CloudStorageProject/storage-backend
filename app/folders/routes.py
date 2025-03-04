@@ -3,9 +3,12 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth.services import get_basic_auth
-from app.folders.errors import *
-from app.folders.services import *
-from app.folders.schemas import *
+from app.folders.errors import FolderNotFound, FolderNameAlreadyTakenInParent, CannotModifyRootFolder
+from app.folders.services import (
+    get_root_folder, get_specific_folder, create_in_root, 
+    create_in_folder, change_folder_name, delete_folder
+)
+from app.folders.schemas import FolderCreate, FolderPatch, FolderOut
 from app.auth.schemas import CurrentUser
 
 

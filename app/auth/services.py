@@ -1,10 +1,21 @@
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from app.auth.schemas import UserCreate, UserLogin, ChallengeAnswer, CurrentUser, LoginResponse, ChallengeString, UserInfo
+from app.auth.schemas import (
+    UserCreate, UserLogin, ChallengeAnswer, 
+    CurrentUser, LoginResponse, ChallengeString, 
+    UserInfo
+)
 from app.auth.utils import hash_password, verify_signature, generate_challenge_string
 from app.models import User, Challenge, Folder
-from app.auth.utils import verify_password, create_access_token, decode_access_token, get_user_by_username
-from app.auth.errors import *
+from app.auth.utils import (
+    verify_password, create_access_token, decode_access_token, 
+    get_user_by_username
+)
+from app.auth.errors import (
+    InvalidCredentials, CredentialsAlreadyTaken, NonExistentPublicKey, 
+    NonExistentChallenge, InvalidSignature, InvalidToken, 
+    ExpiredToken, NonExistentUser
+)
 from app.database import get_db
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer

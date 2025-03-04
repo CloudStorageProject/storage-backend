@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, joinedload
 from app.models import Folder
-from app.folders.schemas import *
-from app.folders.errors import *
+from app.folders.schemas import FolderMember, FolderOut, FileOut
+from app.folders.errors import FolderNotFound
 from app.files.utils import bulk_remove_from_storage
 from loguru import logger
 

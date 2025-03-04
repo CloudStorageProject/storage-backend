@@ -4,7 +4,10 @@ from datetime import datetime
 from app.files.schemas import FileData
 from sqlalchemy.orm import Session
 from app.models import File
-from app.files.errors import *
+from app.files.errors import (
+    FileAlreadyExistsInThisFolder, FileUploadError, FileRetrieveError, 
+    FileDoesNotExist, FileDeletionError
+)
 from app.files.schemas import FileMetadata
 from app.main import settings
 from loguru import logger
