@@ -13,6 +13,7 @@ def delete_folder_task(folder: Folder, db: Session) -> None:
             delete_files_in_folder(folder, db)
             delete_subfolders_and_files(folder, db)
 
+            logger.debug(f"Trying to delete the main folder {folder.name}, id = {folder.id}")
             db.delete(folder)
             db.commit()
     except Exception as e:
@@ -27,6 +28,7 @@ def delete_subfolders_and_files(folder: Folder, db: Session) -> None:
         try:
             delete_files_in_folder(subfolder, db)
             delete_subfolders_and_files(subfolder, db)
+            logger.debug(f"Trying to delete subfolder, id = {subfolder.id}")
             db.delete(subfolder)
         except Exception as e:
             db.rollback()
