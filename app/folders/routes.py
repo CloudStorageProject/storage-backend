@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status, HTTPException, BackgroundTasks
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.auth.services import get_basic_auth, get_full_auth
+from app.auth.services import get_basic_auth
 from app.folders.errors import *
 from app.folders.services import *
 from app.folders.schemas import *

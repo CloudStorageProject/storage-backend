@@ -13,7 +13,7 @@ from fastapi.security import OAuth2PasswordBearer
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-def get_user_with_permissions(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db), fullAccess: bool = False) -> CurrentUser:
+def get_user_with_permissions(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db), full_access: bool = False) -> CurrentUser:
     try:
         user = get_user_by_token(token, db)
     except (ExpiredToken, InvalidToken) as e:
@@ -21,18 +21,18 @@ def get_user_with_permissions(token: str = Depends(oauth2_scheme), db: Session =
     except NonExistentUser as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     
-    if fullAccess and not user.get("privileged", False):
+    if full_access and not user.get("privileged", False):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Full access is required.")
     
     return user
 
 
 def get_basic_auth(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> CurrentUser:
-    return get_user_with_permissions(token=token, db=db, fullAccess=False)
+    return get_user_with_permissions(token=token, db=db, full_access=False)
 
 
 def get_full_auth(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> CurrentUser:
-    return get_user_with_permissions(token=token, db=db, fullAccess=True)
+    return get_user_with_permissions(token=token, db=db, full_access=True)
 
 
 def get_user_by_token(token: str, db: Session) -> CurrentUser:
