@@ -2,10 +2,61 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from app.auth.schemas import UserCreate, UserLogin, ChallengeAnswer
 from app.auth.utils import hash_password, verify_signature, generate_challenge_string
-from app.models import User, Challenge
-from app.auth.utils import verify_password, create_access_token
+from app.models import User, Challenge, Folder
+from app.auth.utils import verify_password, create_access_token, decode_access_token
 from app.auth.errors import *
+from app.database import get_db
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+
+def get_user_with_permissions(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db), fullAccess: bool = False):
+    try:
+        user = get_user_by_token(token, db)
+    except (ExpiredToken, InvalidToken) as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except NonExistentUser as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    
+    if fullAccess and not user.get("privileged", False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Full access is required.")
+    
+    return user
+
+
+def get_basic_auth(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    return get_user_with_permissions(token=token, db=db, fullAccess=False)
+
+
+def get_full_auth(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    return get_user_with_permissions(token=token, db=db, fullAccess=True)
+
+
+def strip_unnecessary(user: dict):
+    del user["privileged"]
+    del user["id"]
+    return user
+
+
+def get_user_by_token(token: str, db: Session):
+    payload = decode_access_token(token)
+    username = payload.get("sub")
+
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        raise NonExistentUser("This user does not exist.")
+    
+    return {
+        "username": user.username,
+        "email": user.email,
+        "public_key": user.public_key,
+        "id": user.id,
+        "privileged": (payload.get("access_type") == "full")
+    }
+    
 
 def accept_challenge(public_key: str, challenge: ChallengeAnswer, db: Session):
     user = db.query(User).filter(User.public_key == public_key).first()
@@ -31,6 +82,7 @@ def accept_challenge(public_key: str, challenge: ChallengeAnswer, db: Session):
     db.commit()
 
     return {"token": access_token}
+
 
 def generate_challenge(public_key: str, db: Session):
     user = db.query(User).filter(User.public_key == public_key).first()
@@ -89,6 +141,16 @@ def create_user(db: Session, user: UserCreate):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+
+    root_folder = Folder(
+        name="root",
+        user_id=db_user.id,
+        parent_id=None
+    )
+
+    db.add(root_folder)
+    db.commit()
+    db.refresh(root_folder)
 
     return db_user
 

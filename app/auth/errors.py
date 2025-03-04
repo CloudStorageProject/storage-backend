@@ -22,3 +22,18 @@ class InvalidSignature(Exception):
     def __init__(self, message, *args):
         super().__init__(message, *args)
         self.message = message
+
+class InvalidToken(Exception):
+    def __init__(self, message, *args):
+        super().__init__(message, *args)
+        self.message = message
+
+class ExpiredToken(Exception):
+    def __init__(self, message, *args):
+        super().__init__(message, *args)
+        self.message = message
+
+class NonExistentUser(Exception):
+    def __init__(self, message, *args):
+        super().__init__(message, *args)
+        self.message = message
