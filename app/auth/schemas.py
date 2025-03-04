@@ -1,10 +1,19 @@
 from pydantic import BaseModel, Field, EmailStr
 
+class CurrentUser(BaseModel):
+    username: str
+    email: str
+    public_key: str
+    id: int
+    privileged: bool
+
+    class Config:
+        from_attributes = True
 
 class ChallengeAnswer(BaseModel):
     challenge: str = Field(..., pattern=r'^\d+:[A-Za-z0-9+/=]+$')
     sign: str
-
+    
     @property
     def random_part(self):
         return self.challenge.split(":")[1]
@@ -34,6 +43,9 @@ class UserInfo(BaseModel):
     username: str
     email: str
     public_key: str
+
+    class Config:
+        from_attributes = True
 
 
 class LoginResponse(BaseModel):

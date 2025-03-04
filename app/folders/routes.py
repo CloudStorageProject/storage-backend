@@ -6,19 +6,20 @@ from app.auth.services import get_basic_auth, get_full_auth
 from app.folders.errors import *
 from app.folders.services import *
 from app.folders.schemas import *
+from app.auth.schemas import CurrentUser
 
 
 folder_router = APIRouter()
 
 
 @folder_router.get("/")
-def get_root(current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)) -> FolderOut:
+def get_root(current_user: CurrentUser = Depends(get_basic_auth), db: Session = Depends(get_db)) -> FolderOut:
     root_folder = get_root_folder(current_user, db)
     return root_folder
 
 
 @folder_router.get("/{folder_id}")
-def get_folder(folder_id: int, current_user: dict = Depends(get_basic_auth), db: Session = Depends(get_db)) -> FolderOut:
+def get_folder(folder_id: int, current_user: CurrentUser = Depends(get_basic_auth), db: Session = Depends(get_db)) -> FolderOut:
     try:
         folder = get_specific_folder(current_user, folder_id, db)
         return folder
@@ -30,7 +31,7 @@ def get_folder(folder_id: int, current_user: dict = Depends(get_basic_auth), db:
 @folder_router.post("/")
 def create_folder_in_root(
     folder: FolderCreate, 
-    current_user: dict = Depends(get_basic_auth), 
+    current_user: CurrentUser = Depends(get_basic_auth), 
     db: Session = Depends(get_db)) -> FolderOut:
     try:
         created = create_in_root(current_user, folder.name, db)
@@ -44,7 +45,7 @@ def create_folder_in_root(
 def create_folder_in_folder(
     folder_id: int, 
     folder: FolderCreate, 
-    current_user: dict = Depends(get_basic_auth), 
+    current_user: CurrentUser = Depends(get_basic_auth), 
     db: Session = Depends(get_db)) -> FolderOut:
     try:
         created = create_in_folder(current_user, folder_id, folder.name, db)
@@ -60,8 +61,8 @@ def create_folder_in_folder(
 def folder_patch(
     folder_id: int,
     folder: FolderPatch,
-    current_user: dict = Depends(get_basic_auth),
-    db: Session = Depends(get_db)) -> FolderOut:
+    current_user: CurrentUser = Depends(get_basic_auth),
+    db: Session = Depends(get_db)) -> Response:
     try:
         change_folder_name(current_user, folder_id, folder.name, db)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -77,8 +78,8 @@ def folder_patch(
 def folder_delete(
     folder_id: int,
     background_tasks: BackgroundTasks,
-    current_user: dict = Depends(get_basic_auth), 
-    db: Session = Depends(get_db)):
+    current_user: CurrentUser = Depends(get_basic_auth), 
+    db: Session = Depends(get_db)) -> Response:
     try:
         delete_folder(current_user, folder_id, db, background_tasks)
         return Response(status_code=status.HTTP_204_NO_CONTENT)

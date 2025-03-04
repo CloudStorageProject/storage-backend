@@ -1,24 +1,14 @@
 class FileAlreadyExistsInThisFolder(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass
 
 class FileUploadError(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass
 
 class FileRetrieveError(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass
 
 class FileDoesNotExist(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass
 
 class FileDeletionError(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass

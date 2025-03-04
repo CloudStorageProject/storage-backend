@@ -5,9 +5,9 @@ from app.files.schemas import FileData
 from sqlalchemy.orm import Session
 from app.models import File
 from app.files.errors import *
+from app.files.schemas import FileMetadata
 import os
 import io
-import base64
 
 # assuming the bucket is already created
 bucket_name = os.getenv("BUCKET_NAME")
@@ -19,11 +19,11 @@ minio_client = Minio(
 )
 
 
-def generate_filename(username: str, prefix: str):
+def generate_filename(username: str, prefix: str) -> str:
     return f"{username}-{prefix}-{str(round(datetime.utcnow().timestamp()))}.senc"
 
 
-def save_to_storage(username: str, file: FileData, prefix: str):
+def save_to_storage(username: str, file: FileData, prefix: str) -> str:
     filename = generate_filename(username, prefix)
     file.content = file.content.encode('utf-8')
 
@@ -35,19 +35,20 @@ def save_to_storage(username: str, file: FileData, prefix: str):
             length = len(file.content),
             content_type = "text/plain"
         )
+
         return filename
     except S3Error as e:
         raise FileUploadError("An unexpected error occurred while uploading the file: " + str(e))
 
 
-def remove_from_storage(file_name: str):
+def remove_from_storage(file_name: str) -> None:
     try:
         minio_client.remove_object(bucket_name, file_name)
     except S3Error as e:
         raise FileDeletionError("An unexpected error occurred while deleting the file: " + str(e))
 
 
-def bulk_remove_from_storage(file_names: list[str]):
+def bulk_remove_from_storage(file_names: list[str]) -> None:
     try:
         print('Trying to delete multiple objects...')
         
@@ -66,13 +67,13 @@ def bulk_remove_from_storage(file_names: list[str]):
 
 
 # ownership of the folder is already checked in get_folder
-def check_duplicate_file(folder_id: int, file_name: str, db: Session):
+def check_duplicate_file(folder_id: int, file_name: str, db: Session) -> None:
     file = db.query(File).filter(File.folder_id == folder_id, File.name == file_name).first()
     if file:
         raise FileAlreadyExistsInThisFolder("A file with this name already exists in this folder.")
 
 
-def retrieve_from_storage(filename: str):
+def retrieve_from_storage(filename: str) -> bytes:
     try:
         handle = minio_client.get_object(bucket_name, filename)
         content = handle.read()
@@ -82,8 +83,8 @@ def retrieve_from_storage(filename: str):
     except (S3Error, InvalidResponseError) as e:
         raise FileRetrieveError("An unexpected error occurred while trying to retrieve the file: " + str(e))
     
-
-def retrieve_file_from_id(user_id: int, file_id: int, db: Session):
+# FileMetadata, since .folder is also loaded
+def retrieve_file_from_id(user_id: int, file_id: int, db: Session) -> FileMetadata:
     file = db.query(File).filter(File.id == file_id).first()
 
     if not file:

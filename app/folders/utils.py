@@ -4,7 +4,7 @@ from app.folders.schemas import *
 from app.folders.errors import *
 from app.files.utils import bulk_remove_from_storage
 
-def delete_folder_task(folder: Folder, db: Session):
+def delete_folder_task(folder: Folder, db: Session) -> None:
     try:
         with db.begin():
             print(f"Working with folder {folder.name}, id = {folder.id}")
@@ -19,7 +19,7 @@ def delete_folder_task(folder: Folder, db: Session):
         raise e
 
 
-def delete_subfolders_and_files(folder: Folder, db: Session):
+def delete_subfolders_and_files(folder: Folder, db: Session) -> None:
     folder_full = db.query(Folder).options(joinedload(Folder.subfolders)).filter(Folder.id == folder.id).first()
 
     for subfolder in folder_full.subfolders:
@@ -31,7 +31,7 @@ def delete_subfolders_and_files(folder: Folder, db: Session):
             db.rollback()
             raise e
 
-def delete_files_in_folder(folder: Folder, db: Session):
+def delete_files_in_folder(folder: Folder, db: Session) -> None:
     folder_full = db.query(Folder).options(joinedload(Folder.files)).filter(Folder.id == folder.id).first()
     file_names = [file.name_in_storage for file in folder_full.files]
 
@@ -49,11 +49,11 @@ def delete_files_in_folder(folder: Folder, db: Session):
     db.flush()
 
 
-def get_root(user_id: int, db: Session):
+def get_root(user_id: int, db: Session) -> Folder:
     return db.query(Folder).filter(Folder.parent_id == None, Folder.user_id == user_id).first()
 
 
-def get_folder(user_id: int, folder_id: int, db: Session):
+def get_folder(user_id: int, folder_id: int, db: Session) -> Folder:
     folder = db.query(Folder).filter(Folder.id == folder_id, Folder.user_id == user_id).first()
 
     if not folder:
@@ -62,7 +62,7 @@ def get_folder(user_id: int, folder_id: int, db: Session):
     return folder
 
 
-def folder_exists_in_parent(user_id: int, folder_name: str, folder_id: int, db: Session):
+def folder_exists_in_parent(user_id: int, folder_name: str, folder_id: int, db: Session) -> bool:
     exists = db.query(Folder).filter(
         Folder.name == folder_name, 
         Folder.parent_id == folder_id, 
@@ -71,7 +71,7 @@ def folder_exists_in_parent(user_id: int, folder_name: str, folder_id: int, db: 
     return True if exists else False
 
 
-def construct_model(folder):
+def construct_model(folder) -> FolderOut:
     return FolderOut(
         id=folder.id,
         name=folder.name,

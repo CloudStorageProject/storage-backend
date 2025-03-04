@@ -10,8 +10,8 @@ auth_router = APIRouter()
 
 
 @auth_router.get("/me")
-def get_me(current_user: dict = Depends(get_basic_auth)) -> UserInfo:
-    return strip_unnecessary(current_user)
+def get_me(current_user: CurrentUser = Depends(get_basic_auth)) -> UserInfo:
+    return current_user
     
 
 @auth_router.post("/login/challenge/{public_key}")
@@ -28,8 +28,7 @@ def challenge_login(public_key: str, challenge: ChallengeAnswer, db: Session = D
 @auth_router.get("/login/challenge/{public_key}")
 def get_challenge(public_key: str, db: Session = Depends(get_db)) -> ChallengeString:
     try:
-        challenge_str = generate_challenge(public_key, db)
-        return {"challenge": challenge_str}
+        return generate_challenge(public_key, db)
     except NonExistentPublicKey as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 

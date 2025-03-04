@@ -3,19 +3,21 @@ from sqlalchemy.orm import Session
 from app.folders.utils import get_folder
 from app.files.utils import *
 from app.models import File
+from app.auth.schemas import CurrentUser
+from app.files.schemas import FileMetadata
 
 
-def try_upload_file(current_user: dict, file: FileData, db: Session):
+def try_upload_file(current_user: CurrentUser, file: FileData, db: Session) -> int:
     # checking if the user owns this folder
-    get_folder(current_user['id'], file.folder_id, db)
+    get_folder(current_user.id, file.folder_id, db)
     # checking for duplicates in naming
     check_duplicate_file(file.folder_id, file.name, db)
     # trying to save in bucket
-    filename = save_to_storage(current_user['username'], file, file.name)
+    filename = save_to_storage(current_user.username, file, file.name)
     # (all exceptions are thrown internally)
 
     file_wrapper = File(
-        **{key: value for key, value in vars(file).items() if key != 'content'},
+        **file.model_dump(exclude="content"),
         name_in_storage = filename
     )
 
@@ -26,23 +28,23 @@ def try_upload_file(current_user: dict, file: FileData, db: Session):
     return file_wrapper.id
 
 
-def get_file(current_user: dict, file_id: int, db: Session):
+def get_file(current_user: CurrentUser, file_id: int, db: Session) -> bytes:
     print(f"current_user = {current_user}, file_id = {file_id}")
-    file_name = retrieve_file_from_id(current_user['id'], file_id, db).name_in_storage
-    return retrieve_from_storage(file_name)
+    file_wrapper = retrieve_file_from_id(current_user.id, file_id, db)
+    return retrieve_from_storage(file_wrapper.name_in_storage)
 
 
-def try_rename_file(current_user: dict, file_id: int, new_name: str, db: Session):
-    file = retrieve_file_from_id(current_user['id'], file_id, db)
+def try_rename_file(current_user: CurrentUser, file_id: int, new_name: str, db: Session) -> None:
+    file = retrieve_file_from_id(current_user.id, file_id, db)
     check_duplicate_file(file.folder_id, new_name, db)
 
     file.name = new_name
     db.commit()
 
 
-def try_delete_file(current_user: dict, file_id: int, db: Session):
+def try_delete_file(current_user: CurrentUser, file_id: int, db: Session) -> None:
     try:
-        file = retrieve_file_from_id(current_user['id'], file_id, db)
+        file = retrieve_file_from_id(current_user.id, file_id, db)
 
         remove_from_storage(file.name_in_storage)
 
@@ -54,6 +56,6 @@ def try_delete_file(current_user: dict, file_id: int, db: Session):
         raise e
 
 
-def get_metadata(current_user: dict, file_id: int, db: Session):
-    return retrieve_file_from_id(current_user['id'], file_id, db)
+def get_metadata(current_user: CurrentUser, file_id: int, db: Session) -> FileMetadata:
+    return retrieve_file_from_id(current_user.id, file_id, db)
 
