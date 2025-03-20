@@ -5,7 +5,7 @@ from app.files.errors import (
     FileAlreadyExistsInThisFolder, FileUploadError, FileRetrieveError, 
     FileDoesNotExist, FileDeletionError, SpaceLimitExceeded
 )
-from app.auth.services import get_basic_auth
+from app.auth.services import get_basic_auth, get_full_auth
 from app.files.schemas import (
     FileData, FileMetadata, FileResponse, 
     FileRename
@@ -24,11 +24,10 @@ from app.auth.schemas import CurrentUser
 file_router = APIRouter()
 
 
-# SHOULD BE CHANGED TO GET_FULL_AUTH IN PRODUCTION (?)
 @file_router.post("/")
 def upload_file(
     file: FileData, 
-    current_user: CurrentUser = Depends(get_basic_auth), 
+    current_user: CurrentUser = Depends(get_full_auth), 
     db: Session = Depends(get_db)) -> FileResponse:
     try:
         return FileResponse(file_id=try_upload_file(current_user, file, db))
@@ -40,11 +39,10 @@ def upload_file(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
-# SHOULD BE CHANGED TO GET_FULL_AUTH IN PRODUCTION (?)
 @file_router.get("/{file_id}")
 def get_file_contents(
     file_id: int, 
-    current_user: CurrentUser = Depends(get_basic_auth), 
+    current_user: CurrentUser = Depends(get_full_auth), 
     db: Session = Depends(get_db)) -> StreamingResponse:
     try:
         bytes = get_file(current_user, file_id, db)
@@ -56,8 +54,6 @@ def get_file_contents(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
 
-# SHOULD BE CHANGED TO GET_FULL_AUTH IN PRODUCTION (?)
-# getting metadata (cryptographic parameters, type, format, etc)
 @file_router.get("/{file_id}/params")
 def get_file_parameters(
     file_id: int, 
@@ -68,14 +64,12 @@ def get_file_parameters(
     except FileDoesNotExist as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-    
 
-# SHOULD BE CHANGED TO GET_FULL_AUTH IN PRODUCTION (?)
 @file_router.patch("/{file_id}")
 def rename_file(
     new_name: FileRename, 
     file_id: int, 
-    current_user: CurrentUser = Depends(get_basic_auth), 
+    current_user: CurrentUser = Depends(get_full_auth), 
     db: Session = Depends(get_db)) -> Response:
     try:
         try_rename_file(current_user, file_id, new_name.new_name, db)
@@ -86,11 +80,10 @@ def rename_file(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     
 
-# SHOULD BE CHANGED TO GET_FULL_AUTH IN PRODUCTION (?)
 @file_router.delete("/{file_id}")
 def delete_file(
     file_id: int, 
-    current_user: CurrentUser = Depends(get_basic_auth), 
+    current_user: CurrentUser = Depends(get_full_auth), 
     db: Session = Depends(get_db)) -> Response:
     try:
         try_delete_file(current_user, file_id, db)
