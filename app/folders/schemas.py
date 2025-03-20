@@ -35,3 +35,9 @@ class FileOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class TakenSpace(BaseModel):
+    available: float
+    used: float
+    used_percentage: float

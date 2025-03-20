@@ -3,7 +3,7 @@ from fastapi.responses import Response
 from app.database import get_db
 from app.files.errors import (
     FileAlreadyExistsInThisFolder, FileUploadError, FileRetrieveError, 
-    FileDoesNotExist, FileDeletionError
+    FileDoesNotExist, FileDeletionError, SpaceLimitExceeded
 )
 from app.auth.services import get_basic_auth
 from app.files.schemas import (
@@ -36,7 +36,7 @@ def upload_file(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except FileUploadError as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-    except FileAlreadyExistsInThisFolder as e:
+    except (FileAlreadyExistsInThisFolder, SpaceLimitExceeded) as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 

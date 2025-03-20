@@ -1,13 +1,23 @@
 from sqlalchemy.orm import Session
 from app.models import Folder
 from app.folders.errors import FolderNameAlreadyTakenInParent, CannotModifyRootFolder
-from app.folders.schemas import FolderOut
+from app.folders.schemas import FolderOut, TakenSpace
 from app.folders.utils import (
     delete_folder_task, get_root, get_folder, 
     folder_exists_in_parent, construct_model
 )
 from app.auth.schemas import CurrentUser
 from fastapi import BackgroundTasks
+from app.main import settings
+
+
+def compute_space(current_user: CurrentUser) -> TakenSpace:
+    return TakenSpace(
+        available=settings.USER_SPACE_CAPACITY,
+        used=current_user.space_taken,
+        used_percentage=(current_user.space_taken / settings.USER_SPACE_CAPACITY) * 100
+    )
+
 
 
 def get_root_folder(current_user: CurrentUser, db: Session) -> FolderOut:

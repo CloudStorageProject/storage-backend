@@ -59,7 +59,8 @@ def get_user_by_token(token: str, db: Session) -> CurrentUser:
         email=user.email,
         public_key=user.public_key,
         id=user.id,
-        privileged=(payload.get("access_type") == "full")
+        privileged=(payload.get("access_type") == "full"),
+        space_taken=user.space_taken
     )
     
 

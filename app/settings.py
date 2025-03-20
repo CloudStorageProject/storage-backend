@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     MINIO_SECURE: bool
     DEBUG_MODE: bool
     TRUSTED_ORIGIN: str
+    USER_SPACE_CAPACITY: int
 
     class Config:
         env_file = ".env"

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base  
@@ -11,6 +11,7 @@ class User(Base):
     hashed_password = Column(String)
     email = Column(String, unique=True, index=True)
     public_key = Column(String, unique=True)
+    space_taken = Column(Float, default=0.0)
 
     challenges = relationship("Challenge", back_populates="user")
     folders = relationship("Folder", back_populates="user")
@@ -53,5 +54,6 @@ class File(Base):
     encrypted_key = Column(String, nullable=False)
     encrypted_iv = Column(String, nullable=False)
     name_in_storage = Column(String, nullable=False)
+    size = Column(Float, default=0.0)
     
     folder = relationship('Folder', back_populates='files')

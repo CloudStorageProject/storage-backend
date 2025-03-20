@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.models import Folder
 from app.folders.schemas import FolderMember, FolderOut, FileOut
 from app.folders.errors import FolderNotFound
-from app.files.utils import bulk_remove_from_storage
+from app.files.utils import bulk_remove_from_storage, decrement_user_space
 from loguru import logger
 
 def delete_folder_task(folder: Folder, db: Session) -> None:
@@ -45,6 +45,7 @@ def delete_files_in_folder(folder: Folder, db: Session) -> None:
 
     for file in folder_full.files:
         try:
+            decrement_user_space(folder.user_id, file.size, db)
             db.delete(file)
         except Exception as e:
             db.rollback()

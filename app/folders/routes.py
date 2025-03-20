@@ -6,13 +6,22 @@ from app.auth.services import get_basic_auth
 from app.folders.errors import FolderNotFound, FolderNameAlreadyTakenInParent, CannotModifyRootFolder
 from app.folders.services import (
     get_root_folder, get_specific_folder, create_in_root, 
-    create_in_folder, change_folder_name, delete_folder
+    create_in_folder, change_folder_name, delete_folder,
+    compute_space
 )
-from app.folders.schemas import FolderCreate, FolderPatch, FolderOut
+from app.folders.schemas import (
+    FolderCreate, FolderPatch, FolderOut,
+    TakenSpace
+)
 from app.auth.schemas import CurrentUser
 
 
 folder_router = APIRouter()
+
+
+@folder_router.get("/space")
+def get_space(current_user: CurrentUser = Depends(get_basic_auth)) -> TakenSpace:
+    return compute_space(current_user)
 
 
 @folder_router.get("/")

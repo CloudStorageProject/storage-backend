@@ -3,7 +3,7 @@ from minio.deleteobjects import DeleteObject
 from datetime import datetime
 from app.files.schemas import FileData
 from sqlalchemy.orm import Session
-from app.models import File
+from app.models import File, User
 from app.files.errors import (
     FileAlreadyExistsInThisFolder, FileUploadError, FileRetrieveError, 
     FileDoesNotExist, FileDeletionError
@@ -21,6 +21,22 @@ minio_client = Minio(
     secret_key=settings.MINIO_PASSWORD,
     secure=settings.MINIO_SECURE
 )
+
+
+def increment_user_space(user_id: int, space_in_mb: float, db: Session) -> None:
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        user.space_taken += space_in_mb
+
+
+def decrement_user_space(user_id: int, space_in_mb: float, db: Session) -> None:
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        user.space_taken -= space_in_mb
+
+
+def get_file_size_gb(file: FileData) -> float:
+    return len(file.content) / (1024 ** 3)
 
 
 def generate_filename(username: str, prefix: str) -> str:
