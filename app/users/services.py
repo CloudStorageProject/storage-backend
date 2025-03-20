@@ -12,10 +12,13 @@ def get_page(db: Session, page: int, page_size: int) -> UserPageOut:
     if page > total_pages:
         raise PageNotFound("No users on this page.")
     
+    db_page = get_requested_page(db, page, page_size)
+    
     return UserPageOut(
+        page_size=len(db_page),
         current_page=page,
         pages_left=total_pages - page,
-        users=get_requested_page(db, page, page_size)
+        users=db_page
     )
 
 def get_basic_user_info(db: Session, username: str) -> UserOut:

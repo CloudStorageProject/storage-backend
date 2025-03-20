@@ -11,6 +11,7 @@ class UserDetailOut(UserOut):
     pub_key: str
     
 class UserPageOut(BaseModel):
+    page_size: int
     current_page: int
     pages_left: int
     users: list[UserOut]
