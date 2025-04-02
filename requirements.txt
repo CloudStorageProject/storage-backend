@@ -8,3 +8,4 @@ pydantic-settings==2.8.1
 PyJWT==2.9.0
 SQLAlchemy==2.0.34
 uvicorn==0.34.0
+psycopg2-binary==2.9.10
