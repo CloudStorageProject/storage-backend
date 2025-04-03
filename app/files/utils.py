@@ -3,20 +3,40 @@ from minio.deleteobjects import DeleteObject
 from datetime import datetime
 from app.files.schemas import FileData
 from sqlalchemy.orm import Session
-from app.models import File
-from app.files.errors import *
+from app.models import File, User
+from app.files.errors import (
+    FileAlreadyExistsInThisFolder, FileUploadError, FileRetrieveError, 
+    FileDoesNotExist, FileDeletionError
+)
 from app.files.schemas import FileMetadata
-import os
+from app.main import settings
+from loguru import logger
 import io
 
 # assuming the bucket is already created
-bucket_name = os.getenv("BUCKET_NAME")
+bucket_name = settings.BUCKET_NAME
 minio_client = Minio(
-    os.getenv("MINIO_ENDPOINT"),
-    access_key=os.getenv("MINIO_LOGIN"),
-    secret_key=os.getenv("MINIO_PASSWORD"),
-    secure=os.getenv("MINIO_SECURE") == "true"
+    settings.MINIO_ENDPOINT,
+    access_key=settings.MINIO_LOGIN,
+    secret_key=settings.MINIO_PASSWORD,
+    secure=settings.MINIO_SECURE
 )
+
+
+def increment_user_space(user_id: int, space_in_mb: float, db: Session) -> None:
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        user.space_taken += space_in_mb
+
+
+def decrement_user_space(user_id: int, space_in_mb: float, db: Session) -> None:
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        user.space_taken -= space_in_mb
+
+
+def get_file_size_gb(file: FileData) -> float:
+    return len(file.content) / (1024 ** 3)
 
 
 def generate_filename(username: str, prefix: str) -> str:
@@ -50,19 +70,19 @@ def remove_from_storage(file_name: str) -> None:
 
 def bulk_remove_from_storage(file_names: list[str]) -> None:
     try:
-        print('Trying to delete multiple objects...')
+        logger.debug('Trying to delete multiple objects...')
         
         objects_to_delete = [DeleteObject(file_name) for file_name in file_names]
         deleted_objects = minio_client.remove_objects(bucket_name, objects_to_delete)
         
         for result in deleted_objects:
             if result.error:
-                print(f"Failed to delete {result.object_name}: {result.error}")
+                logger.debug(f"Failed to delete {result.object_name}: {result.error}")
             else:
-                print(f"Successfully deleted {result.object_name}")
+                logger.debug(f"Successfully deleted {result.object_name}")
                 
     except S3Error as e:
-        print(f'Could not delete multiple objects: {str(e)}')
+        logger.debug(f'Could not delete multiple objects: {str(e)}')
         raise FileDeletionError(f"An unexpected error occurred while deleting files: {str(e)}")
 
 

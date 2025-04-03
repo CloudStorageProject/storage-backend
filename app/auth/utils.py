@@ -6,14 +6,15 @@ from string import ascii_letters, digits
 from app.auth.errors import ExpiredToken, InvalidToken
 from sqlalchemy.orm import Session
 from app.models import User
+from app.main import settings
+from loguru import logger
 import jwt
-import os
 import base64
 import random
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -46,7 +47,7 @@ def decode_access_token(token: str) -> dict:
     except jwt.ExpiredSignatureError:
         raise ExpiredToken("This token is expired.")
     except jwt.PyJWTError as e:
-        print(str(e))
+        logger.debug(f"JWT error: {str(e)}")
         raise InvalidToken("This token is invalid.")
 
 
@@ -66,7 +67,7 @@ def verify_signature(challenge: str, signature: str, public_key: str) -> bool:
         return True
     
     except Exception as e:
-        print(str(e))
+        logger.debug(f"Error while verifying signature: {str(e)}")
         return False
 
 

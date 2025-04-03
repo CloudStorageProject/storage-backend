@@ -12,3 +12,6 @@ class FileDoesNotExist(Exception):
 
 class FileDeletionError(Exception):
     pass
+
+class SpaceLimitExceeded(Exception):
+    pass

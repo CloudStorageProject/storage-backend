@@ -1,17 +1,19 @@
 from sqlalchemy.orm import Session, joinedload
 from app.models import Folder
-from app.folders.schemas import *
-from app.folders.errors import *
-from app.files.utils import bulk_remove_from_storage
+from app.folders.schemas import FolderMember, FolderOut, FileOut
+from app.folders.errors import FolderNotFound
+from app.files.utils import bulk_remove_from_storage, decrement_user_space
+from loguru import logger
 
 def delete_folder_task(folder: Folder, db: Session) -> None:
     try:
         with db.begin():
-            print(f"Working with folder {folder.name}, id = {folder.id}")
+            logger.debug(f"Working with folder {folder.name}, id = {folder.id}")
 
             delete_files_in_folder(folder, db)
             delete_subfolders_and_files(folder, db)
 
+            logger.debug(f"Trying to delete the main folder {folder.name}, id = {folder.id}")
             db.delete(folder)
             db.commit()
     except Exception as e:
@@ -26,6 +28,7 @@ def delete_subfolders_and_files(folder: Folder, db: Session) -> None:
         try:
             delete_files_in_folder(subfolder, db)
             delete_subfolders_and_files(subfolder, db)
+            logger.debug(f"Trying to delete subfolder, id = {subfolder.id}")
             db.delete(subfolder)
         except Exception as e:
             db.rollback()
@@ -35,13 +38,14 @@ def delete_files_in_folder(folder: Folder, db: Session) -> None:
     folder_full = db.query(Folder).options(joinedload(Folder.files)).filter(Folder.id == folder.id).first()
     file_names = [file.name_in_storage for file in folder_full.files]
 
-    print(f"File names for folder {folder.name} with id = {folder.id}: {file_names}")
+    logger.debug(f"File names for folder {folder.name} with id = {folder.id}: {file_names}")
 
     if file_names:
         bulk_remove_from_storage(file_names)
 
     for file in folder_full.files:
         try:
+            decrement_user_space(folder.user_id, file.size, db)
             db.delete(file)
         except Exception as e:
             db.rollback()

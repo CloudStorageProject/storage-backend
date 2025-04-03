@@ -1,9 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.auth.schemas import *
-from app.auth.services import *
+from app.auth.schemas import (
+    CurrentUser, ChallengeAnswer, UserLogin, 
+    UserCreate, UserInfo, LoginResponse, 
+    ChallengeString
+)
+from app.auth.services import (
+    get_basic_auth, accept_challenge, generate_challenge, 
+    try_login, create_user
+)
 from app.database import get_db
-from app.auth.errors import *
+from app.auth.errors import (
+    InvalidCredentials, CredentialsAlreadyTaken, NonExistentPublicKey, 
+    NonExistentChallenge, InvalidSignature
+)
+
+
 
 
 auth_router = APIRouter()
