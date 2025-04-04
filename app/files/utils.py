@@ -23,16 +23,16 @@ minio_client = Minio(
 )
 
 
-def increment_user_space(user_id: int, space_in_mb: float, db: Session) -> None:
+def increment_user_space(user_id: int, space_in_gb: float, db: Session) -> None:
     user = db.query(User).filter(User.id == user_id).first()
     if user:
-        user.space_taken += space_in_mb
+        user.space_taken += space_in_gb
 
 
-def decrement_user_space(user_id: int, space_in_mb: float, db: Session) -> None:
+def decrement_user_space(user_id: int, space_in_gb: float, db: Session) -> None:
     user = db.query(User).filter(User.id == user_id).first()
     if user:
-        user.space_taken -= space_in_mb
+        user.space_taken -= space_in_gb
 
 
 def get_file_size_gb(file: FileData) -> float:

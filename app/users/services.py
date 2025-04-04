@@ -1,36 +1,17 @@
 from sqlalchemy.orm import Session
 from app.models import User
-from app.users.errors import PageNotFound, UserNotFound
-from app.users.schemas import UserPageOut, UserOut, UserDetailOut
-from app.users.utils import get_total_user_count, get_requested_page
-import math
+from app.users.errors import UserNotFound
+from app.users.schemas import UserDetailOut, UserPageOut
+from app.users.utils import get_matching_users
+from app.users.errors import InvalidPageSize
 
-def get_page(db: Session, page: int, page_size: int) -> UserPageOut:
-    user_count = get_total_user_count(db)
-    total_pages = math.ceil(user_count / page_size)
 
-    if page > total_pages:
-        raise PageNotFound("No users on this page.")
+def get_page(db: Session, username: str, size: int) -> UserPageOut:
+    if size < 1 or size > 200:
+        raise InvalidPageSize("Page size must be between 1 and 200.")
     
-    db_page = get_requested_page(db, page, page_size)
-    
-    return UserPageOut(
-        page_size=len(db_page),
-        current_page=page,
-        pages_left=total_pages - page,
-        users=db_page
-    )
+    return get_matching_users(db, username, size)
 
-def get_basic_user_info(db: Session, username: str) -> UserOut:
-    user = db.query(User).filter(User.username == username).first()
-
-    if user is None:
-        raise UserNotFound("This user does not exist.")
-    
-    return UserOut(
-        id=user.id,
-        username=user.username
-    )
 
 def get_pub_key(db: Session, id: int) -> UserDetailOut:
     user = db.query(User).filter(User.id == id).first()

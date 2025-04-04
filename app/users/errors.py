@@ -1,5 +1,5 @@
-class PageNotFound(Exception):
+class UserNotFound(Exception):
     pass
 
-class UserNotFound(Exception):
+class InvalidPageSize(Exception):
     pass
