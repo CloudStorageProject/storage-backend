@@ -52,12 +52,6 @@ def try_upload_file(current_user: CurrentUser, file: FileData, db: Session) -> i
 
     return file_wrapper.id
 
-'''
-def get_file(current_user: CurrentUser, file_id: int, db: Session) -> bytes:
-    logger.debug(f"current_user = {current_user}, file_id = {file_id}")
-    file_wrapper = retrieve_file_from_id(current_user.id, file_id, db)
-    return retrieve_from_storage(file_wrapper.name_in_storage)
-'''
 
 def get_file(current_user: CurrentUser, file_id: int, db: Session) -> bytes:
     logger.debug(f"current_user = {current_user}, file_id = {file_id}")

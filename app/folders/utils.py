@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
-from app.models import Folder
+from app.models import Folder, File, SharedFile
 from app.folders.schemas import FolderMember, FolderOut, FileOut
 from app.folders.errors import FolderNotFound
 from app.files.utils import bulk_remove_from_storage, decrement_user_space
@@ -34,23 +34,34 @@ def delete_subfolders_and_files(folder: Folder, db: Session) -> None:
             db.rollback()
             raise e
 
+
 def delete_files_in_folder(folder: Folder, db: Session) -> None:
     folder_full = db.query(Folder).options(joinedload(Folder.files)).filter(Folder.id == folder.id).first()
-    file_names = [file.name_in_storage for file in folder_full.files]
+    files = folder_full.files
 
+    file_ids = [file.id for file in files]
+    file_sizes = [file.size for file in files]
+    file_names = [file.name_in_storage for file in files]
+    
     logger.debug(f"File names for folder {folder.name} with id = {folder.id}: {file_names}")
 
     if file_names:
         bulk_remove_from_storage(file_names)
 
-    for file in folder_full.files:
-        try:
-            decrement_user_space(folder.user_id, file.size, db)
-            db.delete(file)
-        except Exception as e:
-            db.rollback()
-            raise e
-    db.flush()
+    try:
+        db.query(SharedFile).filter(SharedFile.file_id.in_(file_ids)).delete(synchronize_session=False)
+
+        total_size_to_decrement = sum(file_sizes)
+        decrement_user_space(folder.user_id, total_size_to_decrement, db)
+
+        db.query(File).filter(File.id.in_(file_ids)).delete(synchronize_session=False)
+
+        db.flush()
+        
+    except Exception as e:
+        db.rollback()
+        raise e
+
 
 
 def get_root(user_id: int, db: Session) -> Folder:
