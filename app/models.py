@@ -57,3 +57,19 @@ class File(Base):
     size = Column(Float, default=0.0)
     
     folder = relationship('Folder', back_populates='files')
+
+
+class SharedFile(Base):
+    __tablename__ = 'shared_files'
+
+    id = Column(Integer, primary_key=True)
+    file_id = Column(Integer, ForeignKey('files.id'), nullable=False)
+    destination_user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    initiator_user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    enc_iv = Column(String, nullable=False)
+    enc_key = Column(String, nullable=False)
+
+    file = relationship('File', backref='shared_files')
+    
+    destination_user = relationship('User', foreign_keys=[destination_user_id], backref='received_files')
+    initiator_user = relationship('User', foreign_keys=[initiator_user_id], backref='shared_files_as_initiator')

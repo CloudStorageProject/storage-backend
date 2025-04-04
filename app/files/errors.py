@@ -15,3 +15,15 @@ class FileDeletionError(Exception):
 
 class SpaceLimitExceeded(Exception):
     pass
+
+class DestinationUserDoesNotExist(Exception):
+    pass
+
+class FileAlreadyShared(Exception):
+    pass
+
+class CannotShareWithYourself(Exception):
+    pass
+
+class FileIsNotShared(Exception):
+    pass

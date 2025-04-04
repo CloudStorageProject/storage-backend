@@ -7,16 +7,24 @@ from app.folders.errors import FolderNotFound, FolderNameAlreadyTakenInParent, C
 from app.folders.services import (
     get_root_folder, get_specific_folder, create_in_root, 
     create_in_folder, change_folder_name, delete_folder,
-    compute_space
+    compute_space, get_shared_with_me
 )
 from app.folders.schemas import (
     FolderCreate, FolderPatch, FolderOut,
     TakenSpace
 )
+from app.files.schemas import FileMetadataShortened
 from app.auth.schemas import CurrentUser
 
 
 folder_router = APIRouter()
+
+
+@folder_router.get("/shared")
+def shared_with_me(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_basic_auth)) -> list[FileMetadataShortened]:
+    return get_shared_with_me(db, current_user)
 
 
 @folder_router.get("/space")

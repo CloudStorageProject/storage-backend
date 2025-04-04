@@ -1,12 +1,15 @@
-from sqlalchemy.orm import Session
-from app.models import Folder
+from sqlalchemy.orm import Session, joinedload
+from app.models import Folder, SharedFile, File
 from app.folders.errors import FolderNameAlreadyTakenInParent, CannotModifyRootFolder
-from app.folders.schemas import FolderOut, TakenSpace
+from app.folders.schemas import (
+    FolderOut, TakenSpace, FolderMember
+)
 from app.folders.utils import (
     delete_folder_task, get_root, get_folder, 
     folder_exists_in_parent, construct_model
 )
 from app.auth.schemas import CurrentUser
+from app.files.schemas import FileMetadataShortened
 from fastapi import BackgroundTasks
 from app.main import settings
 
@@ -17,7 +20,6 @@ def compute_space(current_user: CurrentUser) -> TakenSpace:
         used=current_user.space_taken,
         used_percentage=(current_user.space_taken / settings.USER_SPACE_CAPACITY) * 100
     )
-
 
 
 def get_root_folder(current_user: CurrentUser, db: Session) -> FolderOut:
@@ -78,3 +80,29 @@ def delete_folder(current_user: CurrentUser, folder_id: int, db: Session, backgr
         raise CannotModifyRootFolder("Root folder can't be deleted.")
     
     background_tasks.add_task(delete_folder_task, target, db)
+
+
+def get_shared_with_me(db: Session, current_user: CurrentUser) -> list[FileMetadataShortened]:
+    shared_files = db.query(SharedFile).filter(SharedFile.destination_user_id == current_user.id).\
+        options(joinedload(SharedFile.file).joinedload(File.folder)).all()
+    
+    file_metadata_list = []
+
+    for shared_file in shared_files:
+        file = shared_file.file
+        folder = file.folder
+
+        metadata = FileMetadataShortened(
+            file_id=file.id,
+            owner_id=folder.user_id,
+            name=file.name,
+            type=file.type,
+            format=file.format,
+            encrypted_key=shared_file.enc_key,
+            encrypted_iv=shared_file.enc_iv,
+            size=file.size
+        )
+
+        file_metadata_list.append(metadata)
+
+    return file_metadata_list

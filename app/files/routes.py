@@ -3,25 +3,37 @@ from fastapi.responses import Response
 from app.database import get_db
 from app.files.errors import (
     FileAlreadyExistsInThisFolder, FileUploadError, FileRetrieveError, 
-    FileDoesNotExist, FileDeletionError, SpaceLimitExceeded
+    FileDoesNotExist, FileDeletionError, SpaceLimitExceeded,
+    DestinationUserDoesNotExist, FileAlreadyShared, CannotShareWithYourself,
+    FileIsNotShared
 )
 from app.auth.services import get_basic_auth, get_full_auth
 from app.files.schemas import (
     FileData, FileMetadata, FileResponse, 
-    FileRename
+    FileRename, SharingDetails, SharingDetailOut,
+    FileMetadataShortened
 )
 from sqlalchemy.orm import Session
 from app.folders.errors import FolderNotFound
 from app.files.services import (
     try_upload_file, get_file, try_rename_file, 
-    try_delete_file, get_metadata
+    try_delete_file, get_metadata, try_share_file,
+    try_revoke_access, get_shared_data
 )
 from io import BytesIO
 from fastapi.responses import StreamingResponse
 from app.auth.schemas import CurrentUser
+from typing import Union
 
 
 file_router = APIRouter()
+
+
+@file_router.get("/sharedByMe")
+def get_shared_by_me( 
+    db: Session = Depends(get_db), 
+    current_user: CurrentUser = Depends(get_full_auth)) -> list[SharingDetailOut]:
+    return get_shared_data(db, current_user)
 
 
 @file_router.post("/")
@@ -58,7 +70,7 @@ def get_file_contents(
 def get_file_parameters(
     file_id: int, 
     current_user: CurrentUser = Depends(get_basic_auth), 
-    db: Session = Depends(get_db)) -> FileMetadata:
+    db: Session = Depends(get_db)) -> Union[FileMetadata, FileMetadataShortened]:
     try:
         return get_metadata(current_user, file_id, db)
     except FileDoesNotExist as e:
@@ -92,3 +104,32 @@ def delete_file(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except FileDeletionError as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+
+@file_router.post("/{file_id}/share/{user_id}")
+def share_file(
+    sharing_details: SharingDetails,
+    file_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_full_auth)) -> Response:
+    try:
+        try_share_file(sharing_details, current_user, user_id, file_id, db)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except (FileDoesNotExist, DestinationUserDoesNotExist) as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (FileAlreadyShared, CannotShareWithYourself) as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+
+
+@file_router.delete("/{file_id}/share/{user_id}")
+def revoke_access(
+    file_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_full_auth)) -> Response:
+    try:
+        try_revoke_access(current_user, user_id, file_id, db)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except (FileDoesNotExist, DestinationUserDoesNotExist, FileIsNotShared) as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

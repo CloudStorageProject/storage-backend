@@ -3,7 +3,7 @@ from minio.deleteobjects import DeleteObject
 from datetime import datetime
 from app.files.schemas import FileData
 from sqlalchemy.orm import Session
-from app.models import File, User
+from app.models import File, User, SharedFile
 from app.files.errors import (
     FileAlreadyExistsInThisFolder, FileUploadError, FileRetrieveError, 
     FileDoesNotExist, FileDeletionError
@@ -11,6 +11,7 @@ from app.files.errors import (
 from app.files.schemas import FileMetadata
 from app.main import settings
 from loguru import logger
+from typing import Optional
 import io
 
 # assuming the bucket is already created
@@ -116,6 +117,10 @@ def retrieve_file_from_id(user_id: int, file_id: int, db: Session) -> FileMetada
         raise FileDoesNotExist("This file does not exist.")
     
     return file
+
+
+def get_shared_state(file_id: int, user_id: int, db: Session) -> Optional[SharedFile]:
+    return db.query(SharedFile).filter(SharedFile.file_id == file_id, SharedFile.destination_user_id == user_id).first()
 
 
 
