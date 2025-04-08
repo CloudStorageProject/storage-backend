@@ -123,4 +123,9 @@ def get_shared_state(file_id: int, user_id: int, db: Session) -> Optional[Shared
     return db.query(SharedFile).filter(SharedFile.file_id == file_id, SharedFile.destination_user_id == user_id).first()
 
 
+def get_shared_users_for_file(db: Session, file_id: int) -> list[int]:
+    shared_file_entries = db.query(SharedFile).filter(SharedFile.file_id == file_id).all()
+    return [shared_file.destination_user_id for shared_file in shared_file_entries]
+
+
 

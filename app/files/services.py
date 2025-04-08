@@ -4,7 +4,8 @@ from app.folders.utils import get_folder
 from app.files.utils import (
     save_to_storage, remove_from_storage, check_duplicate_file, 
     retrieve_from_storage, retrieve_file_from_id, get_file_size_gb,
-    increment_user_space, decrement_user_space, get_shared_state
+    increment_user_space, decrement_user_space, get_shared_state,
+    get_shared_users_for_file
 )
 from app.models import (
     File, User, SharedFile
@@ -102,6 +103,7 @@ def get_metadata(
     db: Session) -> Union[FileMetadata, FileMetadataShortened]:
     try:
         file_metadata = retrieve_file_from_id(current_user.id, file_id, db)
+        file_metadata.shared = get_shared_users_for_file(db, file_id)
     except FileDoesNotExist as e:
         shared_file = get_shared_state(file_id, current_user.id, db)
 
