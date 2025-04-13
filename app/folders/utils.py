@@ -1,67 +1,91 @@
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import text
 from app.models import Folder, File, SharedFile
 from app.folders.schemas import FolderMember, FolderOut, FileOut
 from app.folders.errors import FolderNotFound
 from app.files.utils import bulk_remove_from_storage, decrement_user_space
 from loguru import logger
 
+
+def traverse_subfolders(db: Session, id: int) -> list[int]:
+    folder_ids = db.execute(text("""
+        WITH RECURSIVE folder_hierarchy AS (
+            SELECT id, parent_id, name
+            FROM folders
+            WHERE id = :folder_id
+
+            UNION ALL
+
+            SELECT f.id, f.parent_id, f.name
+            FROM folders f
+            INNER JOIN folder_hierarchy fh ON f.parent_id = fh.id
+        )
+        SELECT id FROM folder_hierarchy
+    """), {'folder_id': id}).fetchall()
+
+    return [item[0] for item in folder_ids]
+
+
+def get_files_for_folders(db: Session, folder_ids: list[int]) -> tuple[list[int], list[str], list[float]]:
+    files = db.execute(text("""
+        WITH RECURSIVE folder_hierarchy AS (
+            SELECT id
+            FROM folders
+            WHERE id IN :folder_ids
+
+            UNION ALL
+
+            SELECT f.id
+            FROM folders f
+            INNER JOIN folder_hierarchy fh ON f.parent_id = fh.id
+        )
+        SELECT DISTINCT f.id, f.name_in_storage, f.size
+        FROM files f
+        INNER JOIN folder_hierarchy fh ON f.folder_id = fh.id;
+    """), {"folder_ids": tuple(folder_ids)}).fetchall()
+
+    file_ids = [item[0] for item in files]
+    file_names = [item[1] for item in files]
+    file_sizes = [item[2] for item in files]
+
+    return file_ids, file_names, file_sizes
+
+
 def delete_folder_task(folder: Folder, db: Session) -> None:
     try:
         with db.begin():
             logger.debug(f"Working with folder {folder.name}, id = {folder.id}")
 
-            delete_files_in_folder(folder, db)
-            delete_subfolders_and_files(folder, db)
+            folder_ids = traverse_subfolders(db, folder.id)
+            logger.debug(f"Traversing subfolders for folder {folder.id}: {folder_ids}")
 
-            logger.debug(f"Trying to delete the main folder {folder.name}, id = {folder.id}")
+            file_ids, file_names, file_sizes = get_files_for_folders(db, folder_ids)
+
+            logger.debug(f"File ids: {file_ids}")
+            logger.debug(f"File names: {file_names}")
+            logger.debug(f"File sizes: {file_sizes}")
+
+            if file_names:
+                bulk_remove_from_storage(file_names)
+
+            total_size_to_decrement = sum(file_sizes)
+            logger.debug(f"Total size to decrement: {total_size_to_decrement}")
+
+            decrement_user_space(folder.user_id, total_size_to_decrement, db)
+
+            db.query(SharedFile).filter(SharedFile.file_id.in_(file_ids)).delete()
+
+            db.query(File).filter(File.id.in_(file_ids)).delete()
+
+            db.query(Folder).filter(Folder.id.in_(folder_ids)).delete()
+
             db.delete(folder)
+
             db.commit()
+
     except Exception as e:
         db.rollback()
         raise e
-
-
-def delete_subfolders_and_files(folder: Folder, db: Session) -> None:
-    folder_full = db.query(Folder).options(joinedload(Folder.subfolders)).filter(Folder.id == folder.id).first()
-
-    for subfolder in folder_full.subfolders:
-        try:
-            delete_files_in_folder(subfolder, db)
-            delete_subfolders_and_files(subfolder, db)
-            logger.debug(f"Trying to delete subfolder, id = {subfolder.id}")
-            db.delete(subfolder)
-        except Exception as e:
-            db.rollback()
-            raise e
-
-
-def delete_files_in_folder(folder: Folder, db: Session) -> None:
-    folder_full = db.query(Folder).options(joinedload(Folder.files)).filter(Folder.id == folder.id).first()
-    files = folder_full.files
-
-    file_ids = [file.id for file in files]
-    file_sizes = [file.size for file in files]
-    file_names = [file.name_in_storage for file in files]
-    
-    logger.debug(f"File names for folder {folder.name} with id = {folder.id}: {file_names}")
-
-    if file_names:
-        bulk_remove_from_storage(file_names)
-
-    try:
-        db.query(SharedFile).filter(SharedFile.file_id.in_(file_ids)).delete()
-
-        total_size_to_decrement = sum(file_sizes)
-        decrement_user_space(folder.user_id, total_size_to_decrement, db)
-
-        db.query(File).filter(File.id.in_(file_ids)).delete()
-
-        db.flush()
-        
-    except Exception as e:
-        db.rollback()
-        raise e
-
 
 
 def get_root(user_id: int, db: Session) -> Folder:
