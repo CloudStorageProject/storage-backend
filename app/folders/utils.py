@@ -49,12 +49,12 @@ def delete_files_in_folder(folder: Folder, db: Session) -> None:
         bulk_remove_from_storage(file_names)
 
     try:
-        db.query(SharedFile).filter(SharedFile.file_id.in_(file_ids)).delete(synchronize_session=False)
+        db.query(SharedFile).filter(SharedFile.file_id.in_(file_ids)).delete()
 
         total_size_to_decrement = sum(file_sizes)
         decrement_user_space(folder.user_id, total_size_to_decrement, db)
 
-        db.query(File).filter(File.id.in_(file_ids)).delete(synchronize_session=False)
+        db.query(File).filter(File.id.in_(file_ids)).delete()
 
         db.flush()
         
