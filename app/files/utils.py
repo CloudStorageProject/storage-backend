@@ -116,6 +116,8 @@ def retrieve_file_from_id(user_id: int, file_id: int, db: Session) -> FileMetada
     if folder.user_id != user_id:
         raise FileDoesNotExist("This file does not exist.")
     
+    file.shared = get_shared_users_for_file(db, file_id)
+    
     return file
 
 

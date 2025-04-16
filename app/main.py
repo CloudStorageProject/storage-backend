@@ -1,4 +1,4 @@
-from app.settings import Settings
+from app.environment import Settings
 settings = Settings()
 
 from fastapi import FastAPI, Request, status
@@ -7,6 +7,7 @@ from app.auth.routes import auth_router
 from app.folders.routes import folder_router
 from app.files.routes import file_router
 from app.users.routes import user_router
+from app.settings.routes import settings_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
@@ -33,3 +34,4 @@ app.include_router(auth_router, prefix="/auth")
 app.include_router(folder_router, prefix="/folders")
 app.include_router(file_router, prefix="/files")
 app.include_router(user_router, prefix="/users")
+app.include_router(settings_router, prefix="/settings")

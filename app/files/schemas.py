@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from enum import Enum
 from app.folders.schemas import FolderMember
 from typing import Optional
+from app.users.schemas import UserOut
 
 
 class FileType(str, Enum):
@@ -29,7 +30,7 @@ class FileData(AbstractFile):
 class FileMetadata(AbstractFile):
     folder: FolderMember
     size: float
-    shared: Optional[list[int]] = None
+    shared: Optional[list[int]]
 
 
 class FileMetadataShortened(BaseModel):
@@ -56,13 +57,17 @@ class SharingDetails(BaseModel):
     enc_key: str
     enc_iv: str
 
+    class Config:
+        from_attributes = True
+
 
 class SharingDetailOut(BaseModel):
-    metadata: FileMetadata
-    file_id: int
-    destination_user_id: int
-    enc_iv: str
-    enc_key: str
+    id: int
+    name: str
+    type: FileType
+    format: str
+    details: list[UserOut]
 
     class Config:
         from_attributes = True
+
