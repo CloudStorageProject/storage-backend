@@ -177,32 +177,6 @@ def get_shared_data(db: Session, current_user: CurrentUser) -> list[SharingDetai
             File.name,
             File.type,
             File.format,
-            func.jsonb_object_agg(
-                func.cast(SharedFile.destination_user_id, Integer),  # Преобразование ключа в int
-                func.jsonb_build_object(
-                    'enc_iv', SharedFile.enc_iv,
-                    'enc_key', SharedFile.enc_key
-                )
-            ).label("details")
-        )
-        .select_from(SharedFile)
-        .join(File, File.id == SharedFile.file_id)
-        .where(SharedFile.initiator_user_id == current_user.id)
-        .group_by(File.id)
-    )
-
-    result = db.execute(stmt).all()
-
-    return [SharingDetailOut.model_validate(row) for row in result]
-
-
-def get_shared_data(db: Session, current_user: CurrentUser) -> list[SharingDetailOut]:
-    stmt = (
-        select(
-            File.id,
-            File.name,
-            File.type,
-            File.format,
             func.jsonb_agg(
                 func.jsonb_build_object(
                     'id', SharedFile.destination_user_id,
