@@ -104,7 +104,6 @@ def get_metadata(
     db: Session) -> Union[FileMetadata, FileMetadataShortened]:
     try:
         file_metadata = retrieve_file_from_id(current_user.id, file_id, db)
-        file_metadata.shared = get_shared_users_for_file(db, file_id)
     except FileDoesNotExist as e:
         shared_file = get_shared_state(file_id, current_user.id, db)
 

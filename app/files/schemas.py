@@ -30,7 +30,7 @@ class FileData(AbstractFile):
 class FileMetadata(AbstractFile):
     folder: FolderMember
     size: float
-    shared: Optional[list[int]] = None
+    shared: Optional[list[int]]
 
 
 class FileMetadataShortened(BaseModel):
