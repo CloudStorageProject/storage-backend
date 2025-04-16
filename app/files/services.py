@@ -1,5 +1,6 @@
 from app.files.schemas import FileData
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import select, func, Integer
+from sqlalchemy.orm import Session
 from app.folders.utils import get_folder
 from app.files.utils import (
     save_to_storage, remove_from_storage, check_duplicate_file, 
@@ -171,40 +172,52 @@ def try_revoke_access(current_user: CurrentUser, user_id: int, file_id: int, db:
 
 
 def get_shared_data(db: Session, current_user: CurrentUser) -> list[SharingDetailOut]:
-    shared_files = db.query(SharedFile).filter(SharedFile.initiator_user_id == current_user.id).\
-        options(joinedload(SharedFile.file).joinedload(File.folder)).all()
-    
-    sharing_details = []
-
-    for shared_file in shared_files:
-        file = shared_file.file
-        folder = file.folder
-
-        file_metadata = FileMetadata(
-            folder_id=folder.id,
-            name=file.name,
-            type=file.type,
-            format=file.format,
-            encrypted_key=file.encrypted_key,
-            encrypted_iv=file.encrypted_iv,
-            folder=FolderMember(id=folder.id, name=folder.name),
-            size=file.size
+    stmt = (
+        select(
+            File.id,
+            File.name,
+            File.type,
+            File.format,
+            func.jsonb_object_agg(
+                func.cast(SharedFile.destination_user_id, Integer),  # Преобразование ключа в int
+                func.jsonb_build_object(
+                    'enc_iv', SharedFile.enc_iv,
+                    'enc_key', SharedFile.enc_key
+                )
+            ).label("details")
         )
+        .select_from(SharedFile)
+        .join(File, File.id == SharedFile.file_id)
+        .where(SharedFile.initiator_user_id == current_user.id)
+        .group_by(File.id)
+    )
 
-        sharing_detail = SharingDetailOut(
-            metadata=file_metadata,
-            file_id=file.id,
-            destination_user_id=shared_file.destination_user_id,
-            enc_iv=shared_file.enc_iv,
-            enc_key=shared_file.enc_key
+    result = db.execute(stmt).all()
+
+    return [SharingDetailOut.model_validate(row) for row in result]
+
+
+def get_shared_data(db: Session, current_user: CurrentUser) -> list[SharingDetailOut]:
+    stmt = (
+        select(
+            File.id,
+            File.name,
+            File.type,
+            File.format,
+            func.jsonb_agg(
+                func.jsonb_build_object(
+                    'id', SharedFile.destination_user_id,
+                    'username', User.username
+                )
+            ).label("details")
         )
+        .select_from(SharedFile)
+        .join(File, File.id == SharedFile.file_id)
+        .join(User, User.id == SharedFile.destination_user_id)
+        .where(SharedFile.initiator_user_id == current_user.id)
+        .group_by(File.id)
+    )
 
-        sharing_details.append(sharing_detail)
-
-    logger.debug(sharing_details)
-
-    return sharing_details
-
-
+    return db.execute(stmt).all()
 
 
