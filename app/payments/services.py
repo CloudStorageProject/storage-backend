@@ -6,12 +6,17 @@ from app.payments.errors import (
 )
 from app.auth.schemas import CurrentUser
 from app.payments.schemas import (
-    SubscriptionInfo, SessionIdentifier, WebhookResponse
+    SubscriptionInfo, SessionIdentifier, WebhookResponse,
+    SubscriptionView
 )
 from app.payments.utils import (
     create_stripe_customer, update_customer_id, create_subscription_session,
     try_construct_event, handle_successful_payment
 )
+
+
+def get_all_subscription_types(db: Session) -> list[SubscriptionView]:
+    return db.query(SubscriptionType).filter(SubscriptionType.name != "User").all()
 
 
 def create_subscription(db: Session, current_user: CurrentUser, sub_info: SubscriptionInfo) -> SessionIdentifier:

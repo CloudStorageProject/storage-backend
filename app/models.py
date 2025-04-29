@@ -11,6 +11,8 @@ class SubscriptionType(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
     space = Column(Float)
+    price = Column(Float)
+    description = Column(String)
     stripe_price_id = Column(String, nullable=True)
 
 

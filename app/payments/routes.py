@@ -1,12 +1,15 @@
 from fastapi import APIRouter, Depends, status, HTTPException, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.auth.services import get_full_auth
+from app.auth.services import get_full_auth, get_basic_auth
 from app.payments.schemas import (
-    SubscriptionInfo, SessionIdentifier, WebhookResponse
+    SubscriptionInfo, SessionIdentifier, WebhookResponse,
+    SubscriptionView
 )
 from app.auth.schemas import CurrentUser
-from app.payments.services import create_subscription, handle_webhook
+from app.payments.services import (
+    create_subscription, handle_webhook, get_all_subscription_types
+)
 from app.payments.errors import (
     AlreadySubscribed, NonExistentSubscription, WebhookSignatureError,
     InvalidWebhookPayload, CannotSetDefaultStatus, CouldNotCreateCustomer
@@ -14,6 +17,13 @@ from app.payments.errors import (
 
 
 payment_router = APIRouter()
+
+
+@payment_router.get("/overview")
+def subscriptions_overview(
+    current_user: CurrentUser = Depends(get_basic_auth),
+    db: Session = Depends(get_db)) -> list[SubscriptionView]:
+    return get_all_subscription_types(db)
 
 
 @payment_router.post("/subscribe")

@@ -143,7 +143,7 @@ def create_stripe_customer(user: CurrentUser) -> str:
 def init_subscription_types(session: Session) -> None:
     if session.query(func.count(SubscriptionType.id)).scalar() == 0:
         default_types = [
-            SubscriptionType(name="User", space=5.0, stripe_price_id="")
+            SubscriptionType(name="User", space=5.0, price=0.0, description="", stripe_price_id="")
         ]
 
         prices = stripe.Price.list(active=True, expand=["data.product"])
@@ -153,6 +153,8 @@ def init_subscription_types(session: Session) -> None:
                 SubscriptionType(
                     name=price['product']['metadata']['name'],
                     space=price['product']['metadata']['space'],
+                    price=price['unit_amount'] / 100.0,
+                    description=price['product']['description'],
                     stripe_price_id=price['id']
                 )
             )
