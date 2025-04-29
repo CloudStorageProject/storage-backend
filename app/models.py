@@ -1,7 +1,33 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.database import Base  
+from app.database import Base
+from datetime import datetime
+
+
+class SubscriptionType(Base):
+    __tablename__ = "subscription_types"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    space = Column(Float)
+    stripe_price_id = Column(String, nullable=True)
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subscription_id = Column(String, nullable=True)
+    stripe_customer_id = Column(String, nullable=True)
+    subscription_start_date = Column(DateTime, default=datetime.utcnow)
+    subscription_end_date = Column(DateTime, nullable=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    subscription_type_id = Column(Integer, ForeignKey('subscription_types.id'))
+
+    user = relationship("User", back_populates="subscription")
+    subscription_type = relationship("SubscriptionType")
+
 
 class User(Base):
     __tablename__ = "users"
@@ -12,9 +38,14 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     public_key = Column(String, unique=True)
     space_taken = Column(Float, default=0.0)
+    subscription_type_id = Column(Integer, ForeignKey('subscription_types.id'), default=1)
+    stripe_customer_id = Column(String, default="")
 
     challenges = relationship("Challenge", back_populates="user")
     folders = relationship("Folder", back_populates="user")
+
+    subscription_type = relationship("SubscriptionType", uselist=False)
+    subscription = relationship("Subscription", back_populates="user", uselist=False)
 
 
 class Challenge(Base):

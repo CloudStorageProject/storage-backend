@@ -66,7 +66,10 @@ def get_user_by_token(token: str, db: Session) -> CurrentUser:
         public_key=user.public_key,
         id=user.id,
         privileged=(payload.get("access_type") == "full"),
-        space_taken=user.space_taken
+        space_taken=user.space_taken,
+        subscription_name=user.subscription_type.name,
+        subscription_space=user.subscription_type.space,
+        customer_id=user.stripe_customer_id
     )
     
 
@@ -123,7 +126,13 @@ def try_login(db: Session, provided: UserLogin) -> LoginResponse:
     
     access_token = create_access_token(data={"sub": user.username, "access_type": "limited"})
 
-    return LoginResponse(token=access_token, user=user)
+    return LoginResponse(token=access_token, user=UserInfo(
+        username=user.username,
+        email=user.email,
+        public_key=user.public_key,
+        subscription_name=user.subscription_type.name,
+        subscription_space=user.subscription_type.space
+    ))
 
 
 def create_user(db: Session, user: UserCreate) -> UserInfo:
@@ -163,10 +172,15 @@ def create_user(db: Session, user: UserCreate) -> UserInfo:
         )
 
         db.add(root_folder)
-        db.flush()
         db.commit()
 
-        return db_user
+        return UserInfo(
+            username=db_user.username,
+            email=db_user.email,
+            public_key=db_user.public_key,
+            subscription_name=db_user.subscription_type.name,
+            subscription_space=db_user.subscription_type.space
+        )
     
     except Exception as e:
         db.rollback()

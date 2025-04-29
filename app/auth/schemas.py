@@ -7,6 +7,9 @@ class CurrentUser(BaseModel):
     id: int
     privileged: bool
     space_taken: float
+    subscription_name: str
+    subscription_space: float
+    customer_id: str
 
     class Config:
         from_attributes = True
@@ -44,6 +47,8 @@ class UserInfo(BaseModel):
     username: str
     email: str
     public_key: str
+    subscription_name: str
+    subscription_space: float
 
     class Config:
         from_attributes = True

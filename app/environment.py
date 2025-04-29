@@ -13,8 +13,11 @@ class Settings(BaseSettings):
     MINIO_SECURE: bool # чи використовуємо SSL в minio
     DEBUG_MODE: bool # якщо true, всі get_full_auth використовують get_basic_auth
     TRUSTED_ORIGIN: str # довірений ресурс для звернення
-    USER_SPACE_CAPACITY: int # ємність сховища користувача в ГБ
     CORS_DEBUG_MODE: bool # якщо true, звернення дозволені зі всіх джерел
+    STRIPE_SECRET_KEY: str # секретний ключ Stripe
+    STRIPE_WEBHOOK_SECRET: str # секретний ключ для вебхуків
+    PAYMENT_SUCCESS_URL: str # посилання, куди користувача перекине у випадку успішної транзакції
+    PAYMENT_FAILURE_URL: str # посилання, куди користувача перекине у випадку провальної транзакції
 
     class Config:
         env_file = ".env"
