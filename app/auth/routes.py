@@ -16,13 +16,11 @@ from app.auth.errors import (
 )
 
 
-
-
 auth_router = APIRouter()
 
 
 @auth_router.get("/me")
-def get_me(current_user: CurrentUser = Depends(get_basic_auth)) -> UserInfo:
+def get_me(current_user: CurrentUser = Depends(get_basic_auth)) -> CurrentUser:
     return current_user
     
 
