@@ -16,9 +16,9 @@ from app.main import settings
 
 def compute_space(current_user: CurrentUser) -> TakenSpace:
     return TakenSpace(
-        available=settings.USER_SPACE_CAPACITY,
+        available=current_user.subscription_space,
         used=current_user.space_taken,
-        used_percentage=(current_user.space_taken / settings.USER_SPACE_CAPACITY) * 100
+        used_percentage=(current_user.space_taken / current_user.subscription_space) * 100
     )
 
 

@@ -57,16 +57,29 @@ def get_user_by_token(token: str, db: Session) -> CurrentUser:
     username = payload.get("sub")
 
     user = db.query(User).filter(User.username == username).first()
+
     if not user:
         raise NonExistentUser("This user does not exist.")
     
+    subscription_start_date = None
+    subscription_end_date = None
+
+    if user.subscription:
+        subscription_start_date = user.subscription.subscription_start_date
+        subscription_end_date = user.subscription.subscription_end_date
+
     return CurrentUser(
         username=user.username,
         email=user.email,
         public_key=user.public_key,
         id=user.id,
         privileged=(payload.get("access_type") == "full"),
-        space_taken=user.space_taken
+        space_taken=user.space_taken,
+        subscription_name=user.subscription_type.name,
+        subscription_space=user.subscription_type.space,
+        subscription_start_date=subscription_start_date,
+        subscription_end_date=subscription_end_date,
+        customer_id=user.stripe_customer_id
     )
     
 
@@ -163,10 +176,13 @@ def create_user(db: Session, user: UserCreate) -> UserInfo:
         )
 
         db.add(root_folder)
-        db.flush()
         db.commit()
 
-        return db_user
+        return UserInfo(
+            username=db_user.username,
+            email=db_user.email,
+            public_key=db_user.public_key
+        )
     
     except Exception as e:
         db.rollback()

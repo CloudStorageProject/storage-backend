@@ -1,12 +1,23 @@
 from pydantic import BaseModel, Field, EmailStr
+from typing import Optional
+from datetime import datetime
 
 class CurrentUser(BaseModel):
     username: str
     email: str
     public_key: str
     id: int
+
     privileged: bool
+
     space_taken: float
+    subscription_name: str
+    subscription_space: float
+
+    subscription_start_date: Optional[datetime] = None
+    subscription_end_date: Optional[datetime] = None
+
+    customer_id: str
 
     class Config:
         from_attributes = True

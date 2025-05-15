@@ -4,7 +4,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes, serialization
 from string import ascii_letters, digits
 from app.auth.errors import ExpiredToken, InvalidToken
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models import User
 from app.main import settings
 from loguru import logger
@@ -20,7 +20,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def get_user_by_username(db: Session, username: str) -> User:
-    return db.query(User).filter(User.username == username).first()
+    return db.query(User).filter(User.username == username).options(joinedload(User.subscription_type)).first()
 
 
 def hash_password(password: str) -> str:
