@@ -6,6 +6,7 @@ class CurrentUser(BaseModel):
     public_key: str
     id: int
     privileged: bool
+    space_taken: float
 
     class Config:
         from_attributes = True

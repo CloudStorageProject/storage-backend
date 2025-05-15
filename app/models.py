@@ -1,8 +1,7 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base  
-from enum import Enum as PyEnum
 
 class User(Base):
     __tablename__ = "users"
@@ -12,6 +11,7 @@ class User(Base):
     hashed_password = Column(String)
     email = Column(String, unique=True, index=True)
     public_key = Column(String, unique=True)
+    space_taken = Column(Float, default=0.0)
 
     challenges = relationship("Challenge", back_populates="user")
     folders = relationship("Folder", back_populates="user")
@@ -54,5 +54,22 @@ class File(Base):
     encrypted_key = Column(String, nullable=False)
     encrypted_iv = Column(String, nullable=False)
     name_in_storage = Column(String, nullable=False)
+    size = Column(Float, default=0.0)
     
     folder = relationship('Folder', back_populates='files')
+
+
+class SharedFile(Base):
+    __tablename__ = 'shared_files'
+
+    id = Column(Integer, primary_key=True)
+    file_id = Column(Integer, ForeignKey('files.id'), nullable=False)
+    destination_user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    initiator_user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    enc_iv = Column(String, nullable=False)
+    enc_key = Column(String, nullable=False)
+
+    file = relationship('File', backref='shared_files')
+    
+    destination_user = relationship('User', foreign_keys=[destination_user_id], backref='received_files')
+    initiator_user = relationship('User', foreign_keys=[initiator_user_id], backref='shared_files_as_initiator')
