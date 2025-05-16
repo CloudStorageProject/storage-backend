@@ -5,7 +5,7 @@ from app.auth.services import get_full_auth
 from app.auth.schemas import CurrentUser
 from app.settings.schemas import UsernamePatch, PasswordPatch
 from app.settings.services import try_patch_username, try_patch_password
-from app.settings.errors import UsernameAlreadyExists
+from app.settings.errors import UsernameAlreadyExists, InvalidOldPassword
 
 
 settings_router = APIRouter()
@@ -21,14 +21,18 @@ def patch_username(
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except UsernameAlreadyExists as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    
+    except InvalidOldPassword as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+
 
 @settings_router.patch("/password")
 def patch_password(
     data: PasswordPatch,
     db: Session = Depends(get_db),
     current_user: CurrentUser = Depends(get_full_auth)) -> Response:
-    try_patch_password(data, current_user, db)
-    
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    try:
+        try_patch_password(data, current_user, db)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except InvalidOldPassword as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 

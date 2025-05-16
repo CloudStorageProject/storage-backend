@@ -29,7 +29,7 @@ from typing import Union
 def try_upload_file(current_user: CurrentUser, file: FileData, db: Session) -> int:
     file_size = get_file_size_gb(file)
 
-    if current_user.space_taken + file_size > settings.USER_SPACE_CAPACITY:
+    if current_user.space_taken + file_size > current_user.subscription_space:
         raise SpaceLimitExceeded("Space limit exceeded.")
 
     # checking if the user owns this folder
