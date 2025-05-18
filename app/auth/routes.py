@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 from app.auth.schemas import (
     CurrentUser, ChallengeAnswer, UserLogin, 
     UserCreate, UserInfo, LoginResponse, 
-    ChallengeString
+    ChallengeString, UsernameCheck, EmailCheck, CheckResult
 )
 from app.auth.services import (
     get_basic_auth, accept_challenge, generate_challenge, 
-    try_login, create_user
+    try_login, create_user, check_email, check_username
 )
 from app.database import get_db
 from app.auth.errors import (
@@ -17,6 +17,16 @@ from app.auth.errors import (
 
 
 auth_router = APIRouter()
+
+
+@auth_router.post("/checkUsername")
+def check_existing_username(data: UsernameCheck, db: Session = Depends(get_db)) -> CheckResult:
+    return check_username(data, db)
+
+
+@auth_router.post("/checkEmail")
+def check_existing_email(data: EmailCheck, db: Session = Depends(get_db)) -> CheckResult:
+    return check_email(data, db)
 
 
 @auth_router.get("/me")

@@ -3,13 +3,13 @@ from sqlalchemy.orm import Session
 from app.auth.schemas import (
     UserCreate, UserLogin, ChallengeAnswer, 
     CurrentUser, LoginResponse, ChallengeString, 
-    UserInfo
+    UserInfo, EmailCheck, UsernameCheck, CheckResult
 )
 from app.auth.utils import hash_password, verify_signature, generate_challenge_string
 from app.models import User, Challenge, Folder
 from app.auth.utils import (
     verify_password, create_access_token, decode_access_token, 
-    get_user_by_username
+    get_user_by_username, get_user_by_email
 )
 from app.auth.errors import (
     InvalidCredentials, CredentialsAlreadyTaken, NonExistentPublicKey, 
@@ -24,6 +24,14 @@ from loguru import logger
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+
+def check_email(data: EmailCheck, db: Session) -> CheckResult:
+    return CheckResult(exists=(True if get_user_by_email(db, data.email) else False))
+
+
+def check_username(data: UsernameCheck, db: Session) -> CheckResult:
+    return CheckResult(exists=(True if get_user_by_username(db, data.username) else False))
 
 
 def get_user_with_permissions(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db), full_access: bool = False) -> CurrentUser:

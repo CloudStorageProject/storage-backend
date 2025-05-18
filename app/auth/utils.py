@@ -19,6 +19,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def get_user_by_email(db: Session, email: str) -> User:
+    return db.query(User).filter(User.email == email).first()
+
+
 def get_user_by_username(db: Session, username: str) -> User:
     return db.query(User).filter(User.username == username).options(joinedload(User.subscription_type)).first()
 

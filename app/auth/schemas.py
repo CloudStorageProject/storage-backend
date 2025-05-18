@@ -2,6 +2,19 @@ from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
 from datetime import datetime
 
+
+class EmailCheck(BaseModel):
+    email: str
+
+
+class UsernameCheck(BaseModel):
+    username: str
+
+
+class CheckResult(BaseModel):
+    exists: bool
+
+
 class CurrentUser(BaseModel):
     username: str
     email: str
@@ -21,6 +34,7 @@ class CurrentUser(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class ChallengeAnswer(BaseModel):
     challenge: str = Field(..., pattern=r'^\d+:[A-Za-z0-9+/=]+$')
