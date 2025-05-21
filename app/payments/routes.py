@@ -20,9 +20,7 @@ payment_router = APIRouter()
 
 
 @payment_router.get("/overview")
-def subscriptions_overview(
-    current_user: CurrentUser = Depends(get_basic_auth),
-    db: Session = Depends(get_db)) -> list[SubscriptionView]:
+def subscriptions_overview(db: Session = Depends(get_db)) -> list[SubscriptionView]:
     return get_all_subscription_types(db)
 
 
