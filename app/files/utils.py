@@ -1,7 +1,6 @@
 from minio import Minio, S3Error, InvalidResponseError
 from minio.deleteobjects import DeleteObject
 from datetime import datetime
-from app.files.schemas import FileData
 from sqlalchemy.orm import Session
 from app.models import File, User, SharedFile
 from app.files.errors import (
@@ -12,6 +11,7 @@ from app.files.schemas import FileMetadata
 from app.main import settings
 from loguru import logger
 from typing import Optional
+from fastapi import UploadFile
 import io
 
 # assuming the bucket is already created
@@ -36,25 +36,30 @@ def decrement_user_space(user_id: int, space_in_gb: float, db: Session) -> None:
         user.space_taken -= space_in_gb
 
 
-def get_file_size_gb(file: FileData) -> float:
-    return len(file.content) / (1024 ** 3)
+def get_file_size_gb(file: UploadFile) -> float:
+    current_pos = file.file.tell()
+    file.file.seek(0, 2)
+    size_bytes = file.file.tell()
+    file.file.seek(current_pos)
+
+    return size_bytes / (1024 ** 3)
 
 
 def generate_filename(username: str, prefix: str) -> str:
     return f"{username}-{prefix}-{str(round(datetime.utcnow().timestamp()))}.senc"
 
 
-def save_to_storage(username: str, file: FileData, prefix: str) -> str:
+def save_to_storage(username: str, file: UploadFile, prefix: str) -> str:
     filename = generate_filename(username, prefix)
-    file.content = file.content.encode('utf-8')
 
     try:
         minio_client.put_object(
             bucket_name,
             filename,
-            data = io.BytesIO(file.content),
-            length = len(file.content),
-            content_type = "text/plain"
+            data = file.file,
+            length = -1,
+            part_size = 10 * 1024 * 1024,
+            content_type = "text/plain",
         )
 
         return filename
@@ -94,15 +99,12 @@ def check_duplicate_file(folder_id: int, file_name: str, db: Session) -> None:
         raise FileAlreadyExistsInThisFolder("A file with this name already exists in this folder.")
 
 
-def retrieve_from_storage(filename: str) -> bytes:
+def retrieve_stream_from_storage(filename: str):
     try:
-        handle = minio_client.get_object(bucket_name, filename)
-        content = handle.read()
-        handle.close()
-
-        return content
+        return minio_client.get_object(bucket_name, filename)
     except (S3Error, InvalidResponseError) as e:
-        raise FileRetrieveError("An unexpected error occurred while trying to retrieve the file: " + str(e))
+        raise FileRetrieveError("Error retrieving file: " + str(e))
+    
     
 # FileMetadata, since .folder is also loaded
 def retrieve_file_from_id(user_id: int, file_id: int, db: Session) -> FileMetadata:
