@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.responses import Response
 from app.database import get_db
 from app.files.errors import (
@@ -24,6 +24,7 @@ from io import BytesIO
 from fastapi.responses import StreamingResponse
 from app.auth.schemas import CurrentUser
 from typing import Union
+from pydantic import ValidationError
 
 
 file_router = APIRouter()
@@ -38,11 +39,20 @@ def get_shared_by_me(
 
 @file_router.post("/")
 def upload_file(
-    file: FileData, 
-    current_user: CurrentUser = Depends(get_full_auth), 
-    db: Session = Depends(get_db)) -> FileResponse:
+    file: str = Form(...),
+    current_user: CurrentUser = Depends(get_full_auth),
+    db: Session = Depends(get_db)
+) -> FileResponse:
     try:
-        return FileResponse(file_id=try_upload_file(current_user, file, db))
+        file_data = FileData.parse_raw(file)
+        file_id = try_upload_file(current_user, file_data, db)
+        return FileResponse(file_id=file_id)
+    
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=e.errors()
+        )
     except FolderNotFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except FileUploadError as e:
