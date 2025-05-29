@@ -23,10 +23,6 @@ class AbstractFile(BaseModel):
     encrypted_iv: str
 
 
-class FileData(AbstractFile):
-    content: str
-
-
 class FileMetadata(AbstractFile):
     folder: FolderMember
     size: float
