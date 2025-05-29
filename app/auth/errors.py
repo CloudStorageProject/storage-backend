@@ -1,39 +1,23 @@
 class InvalidCredentials(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass
 
 class CredentialsAlreadyTaken(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass
 
 class NonExistentPublicKey(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass
 
 class NonExistentChallenge(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass
 
 class InvalidSignature(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass
 
 class InvalidToken(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass
 
 class ExpiredToken(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass
 
 class NonExistentUser(Exception):
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        self.message = message
+    pass
