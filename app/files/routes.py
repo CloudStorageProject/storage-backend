@@ -109,7 +109,7 @@ def get_file_contents(
     """
     try:
         file_stream = get_file_stream(current_user, file_id, db)
-        return StreamingResponse(file_stream, media_type="application/octet-stream")
+        return StreamingResponse(file_stream, media_type="text/plain")
     
     except FileDoesNotExist as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
