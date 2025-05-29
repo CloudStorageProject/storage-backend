@@ -1,12 +1,10 @@
-from app.files.schemas import FileData
-from sqlalchemy import select, func, Integer
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from app.folders.utils import get_folder
 from app.files.utils import (
     save_to_storage, remove_from_storage, check_duplicate_file, 
-    retrieve_from_storage, retrieve_file_from_id, get_file_size_gb,
-    increment_user_space, decrement_user_space, get_shared_state,
-    get_shared_users_for_file
+    retrieve_stream_from_storage, retrieve_file_from_id, get_file_size_gb,
+    increment_user_space, decrement_user_space, get_shared_state
 )
 from app.models import (
     File, User, SharedFile
@@ -14,9 +12,8 @@ from app.models import (
 from app.auth.schemas import CurrentUser
 from app.files.schemas import (
     FileMetadata, SharingDetails, SharingDetailOut,
-    SharingDetailOut, FileMetadataShortened
+    SharingDetailOut, FileMetadataShortened, AbstractFile
 )
-from app.folders.schemas import FolderMember
 from loguru import logger
 from app.main import settings
 from app.files.errors import (
@@ -24,25 +21,33 @@ from app.files.errors import (
     CannotShareWithYourself, FileIsNotShared, FileDoesNotExist
 )
 from typing import Union
+from fastapi import UploadFile
 
 
-def try_upload_file(current_user: CurrentUser, file: FileData, db: Session) -> int:
-    file_size = get_file_size_gb(file)
+def try_upload_file(current_user: CurrentUser, metadata_obj: AbstractFile, upload: UploadFile, db: Session) -> int:
+    logger.debug(f"User {current_user} is trying to upload file {metadata_obj}")
+
+    get_folder(current_user.id, metadata_obj.folder_id, db)
+    check_duplicate_file(metadata_obj.folder_id, metadata_obj.name, db)
+
+    file_size = get_file_size_gb(upload)
 
     if current_user.space_taken + file_size > current_user.subscription_space:
+        logger.debug("Aborting since the space limit is exceeded")
         raise SpaceLimitExceeded("Space limit exceeded.")
+    
+    filename = save_to_storage(current_user.username, upload, metadata_obj.name)
+    logger.debug(f"Saved to storage successfully")
 
-    # checking if the user owns this folder
-    get_folder(current_user.id, file.folder_id, db)
-    # checking for duplicates in naming
-    check_duplicate_file(file.folder_id, file.name, db)
-    # trying to save in bucket
-    filename = save_to_storage(current_user.username, file, file.name)
-    # (all exceptions are thrown internally)
     file_wrapper = File(
-        **file.model_dump(exclude="content"),
-        name_in_storage = filename,
-        size = file_size
+        folder_id=metadata_obj.folder_id,
+        name=metadata_obj.name,
+        type=metadata_obj.type,
+        format=metadata_obj.format,
+        encrypted_key=metadata_obj.encrypted_key,
+        encrypted_iv=metadata_obj.encrypted_iv,
+        name_in_storage=filename,
+        size=file_size,
     )
 
     db.add(file_wrapper)
@@ -55,21 +60,22 @@ def try_upload_file(current_user: CurrentUser, file: FileData, db: Session) -> i
     return file_wrapper.id
 
 
-def get_file(current_user: CurrentUser, file_id: int, db: Session) -> bytes:
-    logger.debug(f"current_user = {current_user}, file_id = {file_id}")
-    
+def get_file_stream(current_user: CurrentUser, file_id: int, db: Session):
+    logger.debug(f"Retrieving file stream, current_user = {current_user}, file_id = {file_id}")
+
     try:
         file_metadata = retrieve_file_from_id(current_user.id, file_id, db)
-
+        
     except FileDoesNotExist as original_error:
         shared_file = get_shared_state(file_id, current_user.id, db)
 
         if not shared_file:
             raise FileDoesNotExist(str(original_error))
-        
-        return retrieve_from_storage(shared_file.file.name_in_storage)
 
-    return retrieve_from_storage(file_metadata.name_in_storage)
+        return retrieve_stream_from_storage(shared_file.file.name_in_storage)
+
+    return retrieve_stream_from_storage(file_metadata.name_in_storage)
+
 
 
 def try_rename_file(current_user: CurrentUser, file_id: int, new_name: str, db: Session) -> None:
@@ -122,7 +128,6 @@ def get_metadata(
         )
 
     return file_metadata
-
 
 
 def try_share_file(details: SharingDetails, current_user: CurrentUser, dest_user_id: int, file_id: int, db: Session) -> None:
