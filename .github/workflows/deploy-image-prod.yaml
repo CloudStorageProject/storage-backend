@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 env:
-  DOCR_REGISTRY: registry.digitalocean.com/cloudstorage
+  DOCR_REGISTRY: registry.digitalocean.com/cloud-storage
   DOCR_REPOSITORY: storage-backend-prod
 
 jobs:
