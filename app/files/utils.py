@@ -101,7 +101,14 @@ def check_duplicate_file(folder_id: int, file_name: str, db: Session) -> None:
 
 async def retrieve_stream_from_storage(filename: str):
     try:
-        return minio_client.get_object(bucket_name, filename)
+        response = minio_client.get_object(bucket_name, filename)
+
+        def iterate_file():
+            for chunk in response.stream(1024 * 1024):
+                yield chunk
+        
+        return iterate_file
+    
     except (S3Error, InvalidResponseError) as e:
         raise FileRetrieveError("Error retrieving file: " + str(e))
     
