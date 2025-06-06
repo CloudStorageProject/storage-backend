@@ -61,7 +61,7 @@ def upload_file(
 
 
 @file_router.get("/{file_id}")
-async def get_file_contents(
+def get_file_contents(
     file_id: int,
     current_user: CurrentUser = Depends(get_full_auth),
     db: Session = Depends(get_db)
