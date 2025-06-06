@@ -99,7 +99,7 @@ def check_duplicate_file(folder_id: int, file_name: str, db: Session) -> None:
         raise FileAlreadyExistsInThisFolder("A file with this name already exists in this folder.")
 
 
-async def retrieve_stream_from_storage(filename: str):
+def retrieve_stream_from_storage(filename: str):
     try:
         response = minio_client.get_object(bucket_name, filename)
 
