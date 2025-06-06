@@ -61,14 +61,14 @@ def upload_file(
 
 
 @file_router.get("/{file_id}")
-def get_file_contents(
+async def get_file_contents(
     file_id: int,
     current_user: CurrentUser = Depends(get_full_auth),
     db: Session = Depends(get_db)
 ) -> StreamingResponse:
     try:
         file_stream = get_file_stream(current_user, file_id, db)
-        return StreamingResponse(file_stream, media_type="text/plain")
+        return StreamingResponse(file_stream(), media_type="text/plain")
     
     except FileDoesNotExist as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
