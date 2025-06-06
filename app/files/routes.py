@@ -67,7 +67,7 @@ async def get_file_contents(
     db: Session = Depends(get_db)
 ) -> StreamingResponse:
     try:
-        file_stream = get_file_stream(current_user, file_id, db)
+        file_stream = await get_file_stream(current_user, file_id, db)
         return StreamingResponse(file_stream(), media_type="text/plain")
     
     except FileDoesNotExist as e:
