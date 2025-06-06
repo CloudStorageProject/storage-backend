@@ -44,29 +44,6 @@ def upload_file(
     current_user: CurrentUser = Depends(get_full_auth),
     db: Session = Depends(get_db)
 ) -> FileResponse:
-    """
-    Handles file upload with associated metadata.
-
-    This endpoint accepts a file and its metadata, validates the metadata,
-    and uploads the file to the server for the authenticated user. It performs
-    checks such as file duplication, folder existence, and space availability.
-
-    Parameters:
-        metadata (str): A JSON string containing the file's metadata. It is parsed
-            into an `AbstractFile` object.
-        upload (UploadFile): The file to be uploaded.
-        current_user (CurrentUser): The currently authenticated user, resolved via dependency injection.
-        db (Session): SQLAlchemy database session, resolved via dependency injection.
-
-    Returns:
-        FileResponse: An object representing a successful file upload, including the file's unique ID.
-
-    Raises:
-        HTTPException (422): If the metadata is invalid or fails validation.
-        HTTPException (404): If the target folder for the upload does not exist.
-        HTTPException (500): If an internal error occurs during file upload.
-        HTTPException (403): If the file already exists in the folder or the user's storage quota is exceeded.
-    """
     try:
         metadata_obj = AbstractFile.parse_raw(metadata)
 
@@ -84,29 +61,11 @@ def upload_file(
 
 
 @file_router.get("/{file_id}")
-def get_file_contents(
+async def get_file_contents(
     file_id: int,
     current_user: CurrentUser = Depends(get_full_auth),
     db: Session = Depends(get_db)
 ) -> StreamingResponse:
-    """
-    Retrieve and stream the contents of a file by its ID.
-
-    This endpoint allows an authenticated user to download a file they have access to.
-    The file is streamed directly to the client with appropriate headers for download.
-
-    Parameters:
-        file_id (int): The unique identifier of the file to retrieve.
-        current_user (CurrentUser): The currently authenticated user, resolved via dependency injection.
-        db (Session): SQLAlchemy database session, resolved via dependency injection.
-
-    Returns:
-        StreamingResponse: A streamed response containing the file's binary content
-
-    Raises:
-        HTTPException (404): If the file does not exist or is not accessible to the user.
-        HTTPException (500): If an error occurs while retrieving the file.
-    """
     try:
         file_stream = get_file_stream(current_user, file_id, db)
         return StreamingResponse(file_stream, media_type="text/plain")

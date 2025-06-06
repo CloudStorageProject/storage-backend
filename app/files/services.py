@@ -60,7 +60,7 @@ def try_upload_file(current_user: CurrentUser, metadata_obj: AbstractFile, uploa
     return file_wrapper.id
 
 
-def get_file_stream(current_user: CurrentUser, file_id: int, db: Session):
+async def get_file_stream(current_user: CurrentUser, file_id: int, db: Session):
     logger.debug(f"Retrieving file stream, current_user = {current_user}, file_id = {file_id}")
 
     try:
